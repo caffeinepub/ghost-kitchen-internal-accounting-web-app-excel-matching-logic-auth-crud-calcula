@@ -1,0 +1,327 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Ghost kitchen internal accounting web app (frontend: auth-gated UI, CRUD screens, calculations, dashboard, and print-ready reports)",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Gate all accounting UI behind Internet Identity login and prepare UI structure for future roles/permissions (profile setup, access denied, centralized auth guard).",
+      "acceptanceCriteria": [
+        "Unauthenticated users cannot access any accounting data screens",
+        "Authenticated users can log in/out via Internet Identity",
+        "Backend endpoints that read/write accounting data reject unauthenticated callers",
+        "Authorization logic is centralized so adding roles later does not require rewriting every endpoint"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Wire the app to use the new authenticated App shell/router entry (e.g., import the new app root). Ensure the QueryClient cache is cleared on logout flows. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "create",
+          "description": "Create the top-level application component that renders an auth-gated shell (navigation + routes) and blocks all accounting views until authenticated. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/AuthGate.tsx",
+          "operation": "create",
+          "description": "Add a centralized route guard that uses Internet Identity state and backend role/profile queries to decide between: login screen, profile setup, access denied, or the main app. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/LoginButton.tsx",
+          "operation": "create",
+          "description": "Add a Login/Logout button built on useInternetIdentity; on logout, clear cached app data (react-query clear) and any derived UI state. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/ProfileSetupDialog.tsx",
+          "operation": "create",
+          "description": "Implement first-login profile setup UI (ask for name only when getCallerUserProfile() returns null) and persist via saveCallerUserProfile(). Prevent modal flash by respecting actor loading + query fetched state per guidance. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/AccessDeniedScreen.tsx",
+          "operation": "create",
+          "description": "Add a simple access denied screen to display when authenticated but unauthorized (future roles/permissions ready), and to handle authorization trap errors gracefully. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useGetCallerUserProfile.ts",
+          "operation": "create",
+          "description": "Create a react-query hook for getCallerUserProfile() that properly reflects actor dependency (avoid profile setup modal flash). Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useGetCallerUserRole.ts",
+          "operation": "create",
+          "description": "Create a react-query hook for getCallerUserRole() and surface role state for future role-based UI. Verify the authorization component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useAuthErrorMapping.ts",
+          "operation": "create",
+          "description": "Centralize frontend handling for backend authorization failures (e.g., traps) into user-friendly English messages and consistent redirect/deny behavior. Verify the authorization component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Build desktop-optimized data entry and review UI for Expenses, Sales/Revenue, and COGS with validation, dropdowns, and editable tables.",
+      "acceptanceCriteria": [
+        "Expenses form includes: Date, Category dropdown, Vendor dropdown, Description, Amount, Payment Method dropdown",
+        "Sales/Revenue form includes: Date, Gross sales, per-platform percentage inputs (e.g., DoorDash, Uber Eats), and Net profit for the day (entered or computed based on the preserved Excel logic)",
+        "COGS form includes: Date, Item, Quantity, Cost, Vendor dropdown",
+        "Each section provides a list/table view with edit/delete actions",
+        "Basic validation prevents invalid numbers and missing required fields",
+        "All user-facing text is in English"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ExpensesPage.tsx",
+          "operation": "create",
+          "description": "Create Expenses entry/edit UI with a form (date/category/vendor/description/amount/payment method), validation, and a table list with edit/delete actions. Compose shadcn-ui components (inputs/select/table/dialog) for consistent UI; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/RevenuePage.tsx",
+          "operation": "create",
+          "description": "Create Sales/Revenue entry/edit UI with a form (date, gross sales, per-platform percentages, net profit entered or computed via preserved Excel logic) and a table list with edit/delete actions. Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/CogsPage.tsx",
+          "operation": "create",
+          "description": "Create COGS entry/edit UI with a form (date, item, quantity, cost, vendor) and a table list with edit/delete actions. Use a frontend data/service abstraction so the UI is ready when backend COGS capabilities are available. Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useExpenses.ts",
+          "operation": "create",
+          "description": "Add react-query hooks for listing/creating/updating/deleting expenses and cache invalidation patterns so tables update after changes. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useRevenue.ts",
+          "operation": "create",
+          "description": "Add react-query hooks for listing/creating/updating/deleting revenue entries and cache invalidation patterns so tables update after changes. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useCogs.ts",
+          "operation": "create",
+          "description": "Add hooks and a service interface for COGS CRUD that can be wired to backend capabilities when present; ensure the UI can still render and validate fields. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/validation.ts",
+          "operation": "create",
+          "description": "Centralize basic numeric/date required-field validation helpers for the accounting forms to keep UI logic clean and consistent (English messages). Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "modify",
+          "description": "Register routes/navigation entries for Expenses, Revenue, and COGS pages so they are reachable from the authenticated shell. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add master-data management screens for Categories, Vendors, and Payment Methods and ensure all entry forms consume these dynamic dropdown values.",
+      "acceptanceCriteria": [
+        "Dedicated UI pages exist to manage Categories, Vendors, and Payment Methods",
+        "Changes to master data are immediately reflected in data entry forms without redeploying",
+        "Backend prevents deleting master data that is in use (or provides a safe handling strategy such as soft-delete/archiving)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/MasterDataPage.tsx",
+          "operation": "create",
+          "description": "Create a Master Data management page with sections/tabs for Categories, Vendors, and Payment Methods including create/update/delete actions and immediate list refresh. Compose shadcn-ui components (tabs/table/dialog/forms); do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useMasterData.ts",
+          "operation": "create",
+          "description": "Add react-query hooks for fetching and mutating Categories, Vendors, and Payment Methods with consistent cache keys and invalidation so changes propagate immediately into all dropdowns. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ExpensesPage.tsx",
+          "operation": "modify",
+          "description": "Refactor Expenses form dropdowns to source Categories/Vendors/Payment Methods via the shared master-data hooks so updates reflect immediately. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/RevenuePage.tsx",
+          "operation": "modify",
+          "description": "Refactor Revenue form to source Categories via shared master-data hooks (aligned to spreadsheet columns as applicable). Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/CogsPage.tsx",
+          "operation": "modify",
+          "description": "Refactor COGS form vendor dropdown to source Vendors via shared master-data hooks. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "modify",
+          "description": "Add navigation/route entry for Master Data management within the authenticated app shell. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Implement Excel-matching calculation logic in a clearly defined, testable frontend formulas module and use it to derive totals/summaries for dashboard and reports.",
+      "acceptanceCriteria": [
+        "System computes: category totals, monthly totals, annual summaries, P&L, margins, and platform fee impacts (based on provided platform percentages)",
+        "Calculation results are reproducible and consistent for the same input data",
+        "A documented place exists in the codebase to define/adjust the formula logic (so it can be aligned to the spreadsheet), without changing unrelated UI/CRUD flows",
+        "Automated tests (backend and/or frontend) validate calculations against at least one set of sample inputs/expected outputs derived from the Excel spreadsheets once provided"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/excelFormulas.ts",
+          "operation": "create",
+          "description": "Create a dedicated formulas module that encodes the Excel-equivalent calculations (totals, P&L, margins, platform fees) as pure functions with explicit inputs/outputs, so logic can be adjusted without touching UI/CRUD flows. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/__fixtures__/excelSample.case1.json",
+          "operation": "create",
+          "description": "Add a sample input/expected-output fixture placeholder structure for validating formulas against Excel-derived values once provided (keep English keys/notes). Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/lib/excelFormulas.test.ts",
+          "operation": "create",
+          "description": "Add automated unit tests for the formulas module using the fixture(s) to validate 1:1 calculation outputs. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "modify",
+          "description": "Update dashboard computations to use the centralized formulas module (no duplicated math in UI). Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ReportsPage.tsx",
+          "operation": "modify",
+          "description": "Update report computations to use the centralized formulas module to ensure consistency with Excel logic across all report types. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Create a KPI dashboard with selectable time windows and configurable color-coded profitability/margin indicators, backed by live data reloads.",
+      "acceptanceCriteria": [
+        "Dashboard displays Total profit, Total expenses, Profit margin, and COGS for the selected time window",
+        "User can switch between current day, current month, last 3 months, last 6 months, last 12 months",
+        "Values are color-coded: green for profitable/positive, red for loss/negative or margin below threshold (threshold is configurable)",
+        "Dashboard loads data from backend APIs and updates when new entries are added"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "create",
+          "description": "Implement the main Dashboard view with KPI cards (profit, expenses, margin, COGS), time-window selector, and color-coded semantics based on configurable thresholds; compute values via the centralized formulas module and data hooks. Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/KpiCard.tsx",
+          "operation": "create",
+          "description": "Add a reusable KPI card component that supports numeric alignment, green/red semantics, and compact desktop layout. Compose shadcn-ui components where helpful; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/TimeWindowSelector.tsx",
+          "operation": "create",
+          "description": "Add a time window selector (day/month/3/6/12 months) used by the dashboard (and optionally reports) for consistent filtering UX. Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/config/accounting.ts",
+          "operation": "create",
+          "description": "Define configurable dashboard thresholds (e.g., margin threshold) and any shared constants for time-window definitions in one place. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useDashboardData.ts",
+          "operation": "create",
+          "description": "Create a hook that gathers required data (expenses, revenue, COGS when available) and derives dashboard KPIs for the selected time window, ensuring updates after mutations via react-query invalidation. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "modify",
+          "description": "Add/ensure a primary navigation link and route registration for the Dashboard as the authenticated landing screen. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Build print-friendly report views for daily/monthly/annual and rolling-window summaries with spreadsheet-style tables and dedicated print CSS.",
+      "acceptanceCriteria": [
+        "Each requested report type is accessible from a Reports section with date/month/year selectors as appropriate",
+        "Reports render in a clean, table-based accounting layout suitable for printing",
+        "Print CSS ensures readable typography, proper page breaks where reasonable, and hides non-report navigation controls during printing",
+        "Users can print to PDF using the browser’s print dialog and get a clean output"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ReportsPage.tsx",
+          "operation": "create",
+          "description": "Create a Reports section with selectors and navigation for: daily summary, monthly expense report, monthly P&L, 3/6/12-month reports, and annual summary. Render each report in a spreadsheet-style table layout and provide a clear print action (browser print). Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/ReportLayout.tsx",
+          "operation": "create",
+          "description": "Add a shared report layout wrapper that standardizes headings, date ranges, table formatting, and print-only elements across all report types. Compose shadcn-ui components where helpful; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/DailySummaryReport.tsx",
+          "operation": "create",
+          "description": "Implement the daily summary report view component using the centralized formulas module and a print-friendly table layout. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/MonthlyExpenseReport.tsx",
+          "operation": "create",
+          "description": "Implement the monthly expense report view component with category/vendor breakdowns as dictated by the spreadsheet layout logic, using the centralized formulas module. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/MonthlyPnLReport.tsx",
+          "operation": "create",
+          "description": "Implement the monthly profit & loss report component using centralized formulas for profit/margin/platform fee impacts and a table-based layout suitable for audit/printing. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/RollingWindowReport.tsx",
+          "operation": "create",
+          "description": "Implement a reusable rolling-window (3/6/12 months) report component to avoid duplicating layout logic across window sizes. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/reports/AnnualSummaryReport.tsx",
+          "operation": "create",
+          "description": "Implement the annual summary report component using centralized formulas and a print-friendly accounting table layout. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "create",
+          "description": "Add/ensure global print styles and report-specific print rules: hide app chrome/navigation during printing, preserve readable typography, numeric alignment, and reasonable page breaks for tables. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "modify",
+          "description": "Register the Reports route and navigation entry so all report types are reachable from the authenticated shell. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Apply a consistent, professional desktop accounting theme (neutral slate/gray, readable tables, green/red semantics) and ensure print views remove app chrome while retaining structure.",
+      "acceptanceCriteria": [
+        "All primary screens (Dashboard, Expenses, Sales/Revenue, COGS, Master Data, Reports) share a consistent layout, spacing, and typography",
+        "Neutral gray/slate palette is used across the UI with green/red reserved for performance semantics",
+        "Tables align numbers consistently (e.g., right-aligned amounts) and use clear headings",
+        "Print views retain the same visual structure while removing app chrome"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/app/AppShell.tsx",
+          "operation": "create",
+          "description": "Create a shared desktop-optimized app shell (header/sidebar, content container, consistent spacing/typography) used by all authenticated screens; ensure elements can be hidden in print via CSS hooks/classes. Compose shadcn-ui components; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/app/App.tsx",
+          "operation": "modify",
+          "description": "Wrap all primary routes/pages in the shared AppShell to enforce consistent layout and navigation placement across screens. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Define/standardize the neutral slate/gray base styling, typography defaults, numeric table alignment helpers, and consistent green/red semantics classes/tokens; ensure print retains structure while removing app chrome. Verify the shadcn-ui component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/NumericCell.tsx",
+          "operation": "create",
+          "description": "Add a small reusable presentation component/helper for right-aligned numeric values (currency/percent) to keep tables consistent across screens and reports. Compose shadcn-ui components if needed; do not modify immutable ui components. Verify the shadcn-ui component usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}

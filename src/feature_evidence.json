@@ -1,0 +1,148 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-implement-secure-user-access-for-the-internal-accounting-app-using-internet-identity-with-the-ability-to-run-as-a-single-business-user-system-now-while-remaining-future-ready-for-roles-permissions",
+      "featureTitle": "Implement secure user access for the internal accounting app using Internet Identity, with the ability to run as a single-business-user system now while remaining future-ready for roles/permissions.",
+      "files": [
+        "frontend/src/main.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-build-form-based-desktop-optimized-ui-for-entering-and-editing-expenses-sales-revenue-and-cogs-with-clean-inputs-and-dropdowns-including-validation-and-a-table-view-for-reviewing-editing-existing-entries",
+      "featureTitle": "Build form-based desktop-optimized UI for entering and editing Expenses, Sales/Revenue, and COGS with clean inputs and dropdowns, including validation and a table view for reviewing/editing existing entries.",
+      "files": [
+        "frontend/src/pages/CogsPage.tsx",
+        "frontend/src/pages/ExpensesPage.tsx",
+        "frontend/src/pages/RevenuePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-master-data-management-screens-to-create-update-delete-dropdown-values-for-categories-vendors-and-payment-methods-and-ensure-these-dropdowns-are-used-across-all-entry-forms",
+      "featureTitle": "Add master-data management screens to create/update/delete dropdown values for Categories, Vendors, and Payment Methods, and ensure these dropdowns are used across all entry forms.",
+      "files": [
+        "frontend/src/pages/CogsPage.tsx",
+        "frontend/src/pages/ExpensesPage.tsx",
+        "frontend/src/pages/MasterDataPage.tsx",
+        "frontend/src/pages/RevenuePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-automatic-calculations-for-category-totals-monthly-totals-annual-summaries-profit-loss-statements-margins-and-platform-fees-and-ensure-the-results-match-the-existing-excel-formulas-1-1-by-supporting-a-clearly-defined-testable-set-of-formulas-and-expected-outputs",
+      "featureTitle": "Implement automatic calculations for category totals, monthly totals, annual summaries, profit & loss statements, margins, and platform fees, and ensure the results match the existing Excel formulas 1:1 by supporting a clearly defined, testable set of formulas and expected outputs.",
+      "files": [
+        "frontend/src/pages/DashboardPage.tsx",
+        "frontend/src/pages/ReportsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-main-dashboard-with-kpis-and-time-window-performance-views-current-day-current-month-last-3-6-12-months-including-color-coded-indicators-green-profitable-red-loss-margin-below-threshold",
+      "featureTitle": "Create a main dashboard with KPIs and time-window performance views (current day, current month, last 3/6/12 months), including color-coded indicators (green profitable, red loss / margin below threshold).",
+      "files": [
+        "frontend/src/components/KpiCard.tsx",
+        "frontend/src/components/TimeWindowSelector.tsx",
+        "frontend/src/pages/DashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-report-views-that-match-the-spreadsheet-style-layout-logic-and-are-print-friendly-daily-summaries-monthly-expense-reports-monthly-profit-loss-statements-3-6-12-month-reports-and-annual-summaries-with-pdf-export-ready-printing-via-browser-print-styles",
+      "featureTitle": "Implement report views that match the spreadsheet-style layout logic and are print-friendly: daily summaries, monthly expense reports, monthly profit & loss statements, 3/6/12-month reports, and annual summaries, with PDF/export-ready printing via browser print styles.",
+      "files": [
+        "frontend/src/index.css",
+        "frontend/src/pages/ReportsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-a-consistent-clean-professional-accounting-ui-theme-optimized-for-desktop-neutral-gray-slate-base-clear-typography-readable-numeric-tables-and-consistent-green-red-semantics-for-positive-negative-performance",
+      "featureTitle": "Apply a consistent, clean, professional accounting UI theme optimized for desktop: neutral gray/slate base, clear typography, readable numeric tables, and consistent green/red semantics for positive/negative performance.",
+      "files": [
+        "frontend/src/components/NumericCell.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

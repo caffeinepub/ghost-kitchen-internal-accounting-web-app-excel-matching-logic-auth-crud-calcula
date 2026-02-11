@@ -1,0 +1,179 @@
+{
+  "kind": "build_request",
+  "title": "Ghost kitchen internal accounting web app (Excel-matching logic): auth, CRUD, calculations, dashboards, and printable reports",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Implement secure user access for the internal accounting app using Internet Identity, with the ability to run as a single-business-user system now while remaining future-ready for roles/permissions.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Secure login\n* Single business user is fine (future-ready for roles)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Unauthenticated users cannot access any accounting data screens",
+        "Authenticated users can log in/out via Internet Identity",
+        "Backend endpoints that read/write accounting data reject unauthenticated callers",
+        "Authorization logic is centralized so adding roles later does not require rewriting every endpoint"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Create persistent backend data models and CRUD APIs for Expenses, Sales/Revenue, COGS, Categories, Vendors, and Payment Methods to replace the existing Excel storage while keeping data entry fields aligned with the spreadsheet columns.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Relational database with tables such as:\n\n* Expenses\n* Sales\n* COGS\n* Categories\n* Vendors\n* Payment Methods"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Expenses records store: date, categoryId, vendorId, description, amount, paymentMethodId",
+        "Sales/Revenue records store: date, grossSales, platform percentages (by platform), and netProfit (or the raw fields needed to compute it exactly like Excel)",
+        "COGS records store: date, item, quantity, cost, vendorId",
+        "Categories/Vendors/Payment Methods are stored as editable master data with stable IDs",
+        "CRUD APIs exist for each entity (create, list with basic filtering/sorting, update, delete)",
+        "Data is persisted in canister stable storage so it survives upgrades (migration file only added if/when required by state changes)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Build form-based desktop-optimized UI for entering and editing Expenses, Sales/Revenue, and COGS with clean inputs and dropdowns, including validation and a table view for reviewing/editing existing entries.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "All data is entered through clean forms with dropdowns."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Expenses form includes: Date, Category dropdown, Vendor dropdown, Description, Amount, Payment Method dropdown",
+        "Sales/Revenue form includes: Date, Gross sales, per-platform percentage inputs (e.g., DoorDash, Uber Eats), and Net profit for the day (entered or computed based on the preserved Excel logic)",
+        "COGS form includes: Date, Item, Quantity, Cost, Vendor dropdown",
+        "Each section provides a list/table view with edit/delete actions",
+        "Basic validation prevents invalid numbers and missing required fields",
+        "All user-facing text is in English"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add master-data management screens to create/update/delete dropdown values for Categories, Vendors, and Payment Methods, and ensure these dropdowns are used across all entry forms.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Dropdown lists must be editable (categories, vendors, payment methods)."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Dedicated UI pages exist to manage Categories, Vendors, and Payment Methods",
+        "Changes to master data are immediately reflected in data entry forms without redeploying",
+        "Backend prevents deleting master data that is in use (or provides a safe handling strategy such as soft-delete/archiving)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Implement automatic calculations for category totals, monthly totals, annual summaries, profit & loss statements, margins, and platform fees, and ensure the results match the existing Excel formulas 1:1 by supporting a clearly defined, testable set of formulas and expected outputs.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "All calculations must match my existing Excel logic exactly."
+        ]
+      },
+      "acceptanceCriteria": [
+        "System computes: category totals, monthly totals, annual summaries, P&L, margins, and platform fee impacts (based on provided platform percentages)",
+        "Calculation results are reproducible and consistent for the same input data",
+        "A documented place exists in the codebase to define/adjust the formula logic (so it can be aligned to the spreadsheet), without changing unrelated UI/CRUD flows",
+        "Automated tests (backend and/or frontend) validate calculations against at least one set of sample inputs/expected outputs derived from the Excel spreadsheets once provided"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Create a main dashboard with KPIs and time-window performance views (current day, current month, last 3/6/12 months), including color-coded indicators (green profitable, red loss / margin below threshold).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "A main dashboard showing:\n\n* Total profit\n* Total expenses\n* Profit margin\n* COGS\n* Monthly performance at a glance\n* Color-coded indicators for gains and losses"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Dashboard displays Total profit, Total expenses, Profit margin, and COGS for the selected time window",
+        "User can switch between current day, current month, last 3 months, last 6 months, last 12 months",
+        "Values are color-coded: green for profitable/positive, red for loss/negative or margin below threshold (threshold is configurable)",
+        "Dashboard loads data from backend APIs and updates when new entries are added"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Implement report views that match the spreadsheet-style layout logic and are print-friendly: daily summaries, monthly expense reports, monthly profit & loss statements, 3/6/12-month reports, and annual summaries, with PDF/export-ready printing via browser print styles.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Ability to generate and print:\n\n* Daily summaries\n* Monthly expense reports\n* Monthly Profit & Loss statements\n* 3-month, 6-month, and 12-month reports\n* Annual summaries\n\nReports must be:\n\n* Print-friendly\n* PDF/export-ready\n* Audit-friendly"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each requested report type is accessible from a Reports section with date/month/year selectors as appropriate",
+        "Reports render in a clean, table-based accounting layout suitable for printing",
+        "Print CSS ensures readable typography, proper page breaks where reasonable, and hides non-report navigation controls during printing",
+        "Users can print to PDF using the browser’s print dialog and get a clean output"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Apply a consistent, clean, professional accounting UI theme optimized for desktop: neutral gray/slate base, clear typography, readable numeric tables, and consistent green/red semantics for positive/negative performance.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Clean, professional accounting look\n* Neutral gray/slate base\n* Green for profit / positive values\n* Red for loss / negative values\n* Clear tables and readable numbers\n* Optimized for desktop use\n* Print-friendly layouts"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All primary screens (Dashboard, Expenses, Sales/Revenue, COGS, Master Data, Reports) share a consistent layout, spacing, and typography",
+        "Neutral gray/slate palette is used across the UI with green/red reserved for performance semantics",
+        "Tables align numbers consistently (e.g., right-aligned amounts) and use clear headings",
+        "Print views retain the same visual structure while removing app chrome"
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo; add backend/migration.mo only when upgrading existing stable state requires it",
+    "Frontend must not edit any files under frontend/src/components/ui or any paths listed as immutable by the system; compose those components instead",
+    "Use English for all user-facing text",
+    "Preserve the user’s Excel calculation logic 1:1; do not change calculation behavior—only translate it into code once the formulas/outputs are provided"
+  ],
+  "nonGoals": [
+    "Build a marketing site",
+    "Implement POS features",
+    "Implement Shopify/Square/QuickBooks-like generic accounting workflows",
+    "Build a customer-facing website",
+    "Add third-party authentication beyond Internet Identity"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-11T04:25:24.990Z",
+  "summary": "Diff adds a new Motoko backend actor with some authorization checks and basic CRUD for categories/vendors/payment methods/expenses/revenue (revenue appears simplified), plus a React/TanStack Router frontend with Internet Identity login gating, dashboard shell/theme/print CSS, Expenses + Revenue CRUD UIs, and Master Data management UI. COGS and Reports pages are placeholders (“Coming Soon”), and the Excel-matching calculation/reporting requirements are not evidenced.",
+  "missing_requirements": [
+    {
+      "id": "REQ-2",
+      "requirement": "Persistent backend data models and CRUD APIs for Expenses, Sales/Revenue, COGS, Categories, Vendors, and Payment Methods with fields aligned to spreadsheet columns, including stable persistence across upgrades.",
+      "reason": "Backend evidence shows Expenses and a simplified Revenue model, but no COGS model/CRUD is shown; Sales/Revenue fields do not match requested grossSales + per-platform percentages + netProfit/raw fields; stable storage/preupgrade/postupgrade (or migration strategy) is not evidenced in the provided backend snippet.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/CogsPage.tsx",
+        "frontend/src/pages/RevenuePage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Form-based UI for entering/editing Expenses, Sales/Revenue (with per-platform percentages and net profit per Excel logic), and COGS, with validation and table views.",
+      "reason": "Expenses and Revenue pages show table/form patterns, but Revenue UI does not show per-platform percentage inputs or net profit; COGS page is explicitly a placeholder (“Coming Soon”) rather than a CRUD form/table UI.",
+      "evidence": [
+        "frontend/src/pages/RevenuePage.tsx",
+        "frontend/src/pages/CogsPage.tsx",
+        "frontend/src/pages/ExpensesPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Backend prevents deleting master data that is in use (or provides safe strategy like soft-delete/archiving), and master-data screens exist for Categories, Vendors, Payment Methods used across entry forms.",
+      "reason": "Master data UI exists, and Expenses uses category/vendor/payment method dropdowns, but backend deletion safety is not evidenced; shown backend deleteCategory simply removes the category without any in-use checks.",
+      "evidence": [
+        "frontend/src/pages/MasterDataPage.tsx",
+        "frontend/src/pages/ExpensesPage.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Automatic calculations (category totals, monthly/annual summaries, P&L, margins, platform fees) matching Excel formulas 1:1, with a documented formula-definition location and automated tests against sample inputs/expected outputs.",
+      "reason": "No calculation engine/formula module, no explicit platform fee logic, no documented place to adjust formulas, and no automated tests are evidenced in the diff summary; dashboard data source/useDashboardData is referenced but not shown to implement Excel-matching calculations.",
+      "evidence": [
+        "frontend/src/pages/DashboardPage.tsx",
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Dashboard with KPIs for selectable time windows (day, month, last 3/6/12 months) with color-coded indicators and configurable margin threshold, driven by backend APIs.",
+      "reason": "UI includes a time-window selector and KPI cards with color semantics, but configurable threshold is hard-coded (profitMargin >= 20/10) and backend/API computation for the time windows is not evidenced in provided files.",
+      "evidence": [
+        "frontend/src/pages/DashboardPage.tsx",
+        "frontend/src/components/TimeWindowSelector.tsx"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Report views (daily, monthly expense, monthly P&L, 3/6/12-month, annual) with spreadsheet-style layout and print-friendly rendering via browser print styles.",
+      "reason": "Reports page is a placeholder (“Coming Soon”) and does not implement the required report views or selectors; print CSS exists but report layouts themselves are not implemented.",
+      "evidence": [
+        "frontend/src/pages/ReportsPage.tsx",
+        "frontend/src/index.css"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Admin-token-based access-control initialization via a secret URL parameter (caffeineAdminToken) and a backend call _initializeAccessControlWithSecret.",
+      "reason": "BuildRequest only specifies Internet Identity auth (no extra auth mechanisms). Introducing a URL-secret admin token is an additional, unrequested authentication/authorization mechanism.",
+      "evidence": [
+        "frontend/src/hooks/useActor.ts"
+      ]
+    },
+    {
+      "description": "Branding/marketing-style footer link with UTM parameters to caffeine.ai and “Built with ❤️”.",
+      "reason": "Non-goals include not building a marketing site; this footer branding/linking is not requested as part of the internal accounting app requirements.",
+      "evidence": [
+        "frontend/src/components/AppShell.tsx"
+      ]
+    },
+    {
+      "description": "Social media icon imports (react-icons/si: Facebook/X/LinkedIn) in AppShell.",
+      "reason": "No social/marketing integration is requested for an internal accounting tool; these imports appear unrelated to the specified requirements.",
+      "evidence": [
+        "frontend/src/components/AppShell.tsx"
+      ]
+    },
+    {
+      "description": "User profile setup flow (prompting for a user name after login) and user profile storage endpoints.",
+      "reason": "Not requested in requirements (which focus on accounting data CRUD, calculations, dashboards, and reports). It may be useful, but it is additional scope beyond the stated requirements.",
+      "evidence": [
+        "frontend/src/components/ProfileSetupDialog.tsx",
+        "frontend/src/App.tsx",
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "confidence": 0.76,
+  "changed_files": [
+    "all_files_summary.json",
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/index.css",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppShell.tsx",
+    "frontend/src/components/KpiCard.tsx",
+    "frontend/src/components/NumericCell.tsx",
+    "frontend/src/components/ProfileSetupDialog.tsx",
+    "frontend/src/components/TimeWindowSelector.tsx",
+    "frontend/src/hooks/useActor.ts",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
+    "frontend/src/lib/utils.ts",
+    "frontend/src/main.tsx",
+    "frontend/src/pages/CogsPage.tsx",
+    "frontend/src/pages/DashboardPage.tsx",
+    "frontend/src/pages/ExpensesPage.tsx",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/MasterDataPage.tsx",
+    "frontend/src/pages/ReportsPage.tsx",
+    "frontend/src/pages/RevenuePage.tsx",
+    "frontend/src/utils/urlParams.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json"
+  ]
+}

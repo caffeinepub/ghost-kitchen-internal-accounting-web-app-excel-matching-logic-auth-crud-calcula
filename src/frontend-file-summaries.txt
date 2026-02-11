@@ -1,0 +1,19 @@
+{
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup, authentication gate using properly named RootComponent, profile setup flow, and route definitions for all accounting pages (Dashboard, Expenses, Revenue, COGS, Master Data, Reports).",
+  "frontend/src/components/AppShell.tsx": "Application shell component providing consistent layout with header navigation, main content area, and footer with attribution; includes logout functionality and responsive navigation menu.",
+  "frontend/src/pages/LoginPage.tsx": "Login page component with Internet Identity authentication, displaying a centered card with sign-in button and loading states.",
+  "frontend/src/components/ProfileSetupDialog.tsx": "Profile setup dialog that prompts first-time users to enter their name after authentication, preventing modal flash by checking actor and query states.",
+  "frontend/src/pages/DashboardPage.tsx": "Dashboard page displaying KPI cards for net profit, revenue, expenses, profit margin, and COGS with time window selector and quick stats summary.",
+  "frontend/src/pages/ExpensesPage.tsx": "Expenses management page with CRUD operations, form dialog for creating/editing expenses, and table view with category/vendor/payment method dropdowns sourced from master data.",
+  "frontend/src/pages/RevenuePage.tsx": "Revenue management page with CRUD operations, form dialog for creating/editing revenue entries, and table view displaying date, category, description, and amount.",
+  "frontend/src/pages/CogsPage.tsx": "COGS placeholder page displaying \"Coming Soon\" message and planned features list, ready for future implementation when backend COGS endpoints are available.",
+  "frontend/src/pages/MasterDataPage.tsx": "Master data management page with tabs for Categories, Vendors, and Payment Methods, each providing CRUD operations with inline editing and deletion.",
+  "frontend/src/pages/ReportsPage.tsx": "Reports placeholder page displaying \"Coming Soon\" message and list of planned report types (daily, monthly, annual summaries) for future implementation.",
+  "frontend/src/components/KpiCard.tsx": "Reusable KPI card component displaying financial metrics with icon, formatted value (currency/percent), and color-coded variants (success/warning/destructive).",
+  "frontend/src/components/TimeWindowSelector.tsx": "Time window selector dropdown component for filtering dashboard data by day, month, 3/6/12 months periods.",
+  "frontend/src/components/NumericCell.tsx": "Reusable table cell component for right-aligned numeric values with formatting options (currency, percent, number) and monospace font.",
+  "frontend/src/hooks/useQueries.ts": "Centralized React Query hooks for all backend operations including user profiles, categories, vendors, payment methods, expenses, revenue, and dashboard data calculations with proper cache invalidation.",
+  "frontend/src/index.css": "Global styles with OKLCH color system defining neutral slate/gray accounting theme, success/warning/destructive semantic colors, and print-friendly media queries that hide navigation and preserve table structure.",
+  "frontend/src/components/ui/alert.tsx": "Alert component from shadcn/ui for displaying callout messages with default and destructive variants.",
+  "frontend/src/lib/utils.ts": "Utility function for merging Tailwind CSS classes using clsx and tailwind-merge."
+}
