@@ -104,10 +104,12 @@
     
     @page {
         margin: 1cm;
+        size: A4;
     }
     
     table {
         page-break-inside: auto;
+        width: 100%;
     }
     
     tr {
@@ -121,5 +123,21 @@
     
     tfoot {
         display: table-footer-group;
+    }
+    
+    h1, h2, h3 {
+        page-break-after: avoid;
+    }
+    
+    /* Ensure tables fit on page */
+    .overflow-x-auto {
+        overflow: visible !important;
+    }
+    
+    /* Adjust card styling for print */
+    .card {
+        border: 1px solid #e5e7eb;
+        box-shadow: none;
+        page-break-inside: avoid;
     }
 }

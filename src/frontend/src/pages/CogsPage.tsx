@@ -1,8 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import CogsItemsTab from './cogs/CogsItemsTab';
+import CogsPurchasesTab from './cogs/CogsPurchasesTab';
+import CogsSalesTab from './cogs/CogsSalesTab';
+import CogsSummaryTab from './cogs/CogsSummaryTab';
 
 export default function CogsPage() {
+  const [activeTab, setActiveTab] = useState('items');
+
   return (
     <div className="space-y-6">
       <div>
@@ -10,29 +15,30 @@ export default function CogsPage() {
         <p className="text-muted-foreground">Track inventory costs and goods sold</p>
       </div>
 
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Coming Soon</AlertTitle>
-        <AlertDescription>
-          COGS tracking functionality is currently being developed. This feature will allow you to track item costs,
-          quantities, and vendor information for accurate cost of goods sold calculations.
-        </AlertDescription>
-      </Alert>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="purchases">Purchases</TabsTrigger>
+          <TabsTrigger value="sales">Sales</TabsTrigger>
+          <TabsTrigger value="summary">Summary & Trends</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Planned Features</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
-            <li>Track individual items and their costs</li>
-            <li>Record quantities purchased and sold</li>
-            <li>Link items to vendors</li>
-            <li>Calculate total COGS for reporting</li>
-            <li>View COGS trends over time</li>
-          </ul>
-        </CardContent>
-      </Card>
+        <TabsContent value="items" className="mt-6">
+          <CogsItemsTab />
+        </TabsContent>
+
+        <TabsContent value="purchases" className="mt-6">
+          <CogsPurchasesTab />
+        </TabsContent>
+
+        <TabsContent value="sales" className="mt-6">
+          <CogsSalesTab />
+        </TabsContent>
+
+        <TabsContent value="summary" className="mt-6">
+          <CogsSummaryTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

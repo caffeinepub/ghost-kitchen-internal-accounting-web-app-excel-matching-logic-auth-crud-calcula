@@ -15,7 +15,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Ghost Kitchen Accounting</CardTitle>
+          <CardTitle className="text-2xl">FoodBooks</CardTitle>
           <CardDescription>Secure internal operations management system</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

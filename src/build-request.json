@@ -1,179 +1,169 @@
 {
   "kind": "build_request",
-  "title": "Ghost kitchen internal accounting web app (Excel-matching logic): auth, CRUD, calculations, dashboards, and printable reports",
+  "title": "Implement Cost of Goods Sold (COGS) tracking (items, purchases/sales, vendor linkage, reporting & trends)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement secure user access for the internal accounting app using Internet Identity, with the ability to run as a single-business-user system now while remaining future-ready for roles/permissions.",
-      "target": "both",
+      "text": "Add backend data models and CRUD endpoints for COGS inventory items, including item name, default unit cost, and optional vendor linkage, with per-user ownership enforcement consistent with existing Expenses/Revenue authorization behavior.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Secure login\n* Single business user is fine (future-ready for roles)"
+          "Track individual items and their costs",
+          "Link items to vendors"
         ]
       },
       "acceptanceCriteria": [
-        "Unauthenticated users cannot access any accounting data screens",
-        "Authenticated users can log in/out via Internet Identity",
-        "Backend endpoints that read/write accounting data reject unauthenticated callers",
-        "Authorization logic is centralized so adding roles later does not require rewriting every endpoint"
+        "Backend exposes create/update/delete/list query endpoints for COGS items.",
+        "Each item is owned by the caller; non-admin users can only read/write their own items.",
+        "Item can reference an optional vendor id (consistent with existing vendor IDs) and traps if a non-existent vendor id is provided.",
+        "Basic validation exists (e.g., name non-empty; costs are non-negative)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Create persistent backend data models and CRUD APIs for Expenses, Sales/Revenue, COGS, Categories, Vendors, and Payment Methods to replace the existing Excel storage while keeping data entry fields aligned with the spreadsheet columns.",
+      "text": "Add backend data models and CRUD endpoints to record COGS purchases (inventory receipts) with date, item, quantity purchased, unit cost, and optional vendor, and enforce per-user ownership and validation.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Relational database with tables such as:\n\n* Expenses\n* Sales\n* COGS\n* Categories\n* Vendors\n* Payment Methods"
+          "Record quantities purchased and sold",
+          "Track item costs, quantities, and vendor information"
         ]
       },
       "acceptanceCriteria": [
-        "Expenses records store: date, categoryId, vendorId, description, amount, paymentMethodId",
-        "Sales/Revenue records store: date, grossSales, platform percentages (by platform), and netProfit (or the raw fields needed to compute it exactly like Excel)",
-        "COGS records store: date, item, quantity, cost, vendorId",
-        "Categories/Vendors/Payment Methods are stored as editable master data with stable IDs",
-        "CRUD APIs exist for each entity (create, list with basic filtering/sorting, update, delete)",
-        "Data is persisted in canister stable storage so it survives upgrades (migration file only added if/when required by state changes)"
+        "Backend exposes create/update/delete/list query endpoints for COGS purchases.",
+        "Purchase records include: id, owner, date, itemId, quantityPurchased, unitCost, vendorId? (optional).",
+        "Validation prevents zero/negative quantities and negative costs.",
+        "Non-admin users can only read/write their own purchase records."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Build form-based desktop-optimized UI for entering and editing Expenses, Sales/Revenue, and COGS with clean inputs and dropdowns, including validation and a table view for reviewing/editing existing entries.",
-      "target": "frontend",
+      "text": "Add backend data models and CRUD endpoints to record COGS sales (inventory usage) with date, item, and quantity sold, and enforce per-user ownership and validation.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "All data is entered through clean forms with dropdowns."
+          "Record quantities purchased and sold"
         ]
       },
       "acceptanceCriteria": [
-        "Expenses form includes: Date, Category dropdown, Vendor dropdown, Description, Amount, Payment Method dropdown",
-        "Sales/Revenue form includes: Date, Gross sales, per-platform percentage inputs (e.g., DoorDash, Uber Eats), and Net profit for the day (entered or computed based on the preserved Excel logic)",
-        "COGS form includes: Date, Item, Quantity, Cost, Vendor dropdown",
-        "Each section provides a list/table view with edit/delete actions",
-        "Basic validation prevents invalid numbers and missing required fields",
-        "All user-facing text is in English"
+        "Backend exposes create/update/delete/list query endpoints for COGS sales.",
+        "Sale records include: id, owner, date, itemId, quantitySold.",
+        "Validation prevents zero/negative quantities.",
+        "Non-admin users can only read/write their own sales records."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Add master-data management screens to create/update/delete dropdown values for Categories, Vendors, and Payment Methods, and ensure these dropdowns are used across all entry forms.",
-      "target": "both",
+      "text": "Implement backend COGS calculation endpoints that compute total COGS over a provided time window and return time-series trend data (bucketed by month) for reporting.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Dropdown lists must be editable (categories, vendors, payment methods)."
+          "Calculate total COGS for reporting",
+          "View COGS trends over time"
         ]
       },
       "acceptanceCriteria": [
-        "Dedicated UI pages exist to manage Categories, Vendors, and Payment Methods",
-        "Changes to master data are immediately reflected in data entry forms without redeploying",
-        "Backend prevents deleting master data that is in use (or provides a safe handling strategy such as soft-delete/archiving)"
+        "Backend provides an endpoint to compute total COGS between a start and end timestamp (inclusive).",
+        "Backend provides an endpoint to return a monthly time series of COGS values over a requested range (each point includes period start and total COGS).",
+        "COGS computation uses recorded purchases and sales per item and is deterministic for the same underlying data (documented in code comments).",
+        "If there is insufficient purchase history for an item (e.g., sales with no purchases), the API returns a safe, well-defined value (e.g., treats missing cost as 0) and does not crash."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Implement automatic calculations for category totals, monthly totals, annual summaries, profit & loss statements, margins, and platform fees, and ensure the results match the existing Excel formulas 1:1 by supporting a clearly defined, testable set of formulas and expected outputs.",
-      "target": "both",
+      "text": "Replace the current static 'Coming Soon' COGS page with a functional COGS module UI that lets users manage items, record purchases and sales, and view computed total COGS and trends over time.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "All calculations must match my existing Excel logic exactly."
+          "COGS tracking functionality is currently being developed.",
+          "Planned Features"
         ]
       },
       "acceptanceCriteria": [
-        "System computes: category totals, monthly totals, annual summaries, P&L, margins, and platform fee impacts (based on provided platform percentages)",
-        "Calculation results are reproducible and consistent for the same input data",
-        "A documented place exists in the codebase to define/adjust the formula logic (so it can be aligned to the spreadsheet), without changing unrelated UI/CRUD flows",
-        "Automated tests (backend and/or frontend) validate calculations against at least one set of sample inputs/expected outputs derived from the Excel spreadsheets once provided"
+        "/cogs no longer shows a coming-soon alert by default; it provides working UI for: Items, Purchases, Sales, and Summary/Trends.",
+        "Users can create/edit/delete items, purchases, and sales from the UI using dialogs/forms consistent with existing CRUD patterns in the app.",
+        "Vendor selection is available where applicable and is populated from existing vendors master data.",
+        "The page shows total COGS for a selected time window and a simple trend visualization (e.g., table or lightweight chart) using the backend trend endpoint.",
+        "All user-facing text on the COGS page is in English."
       ]
     },
     {
       "id": "REQ-6",
-      "text": "Create a main dashboard with KPIs and time-window performance views (current day, current month, last 3/6/12 months), including color-coded indicators (green profitable, red loss / margin below threshold).",
+      "text": "Extend the React Query data layer to support COGS items, purchases, sales, total COGS, and COGS trend queries/mutations, and ensure relevant screens refresh appropriately after mutations.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "A main dashboard showing:\n\n* Total profit\n* Total expenses\n* Profit margin\n* COGS\n* Monthly performance at a glance\n* Color-coded indicators for gains and losses"
+          "Track individual items and their costs",
+          "Calculate total COGS for reporting"
         ]
       },
       "acceptanceCriteria": [
-        "Dashboard displays Total profit, Total expenses, Profit margin, and COGS for the selected time window",
-        "User can switch between current day, current month, last 3 months, last 6 months, last 12 months",
-        "Values are color-coded: green for profitable/positive, red for loss/negative or margin below threshold (threshold is configurable)",
-        "Dashboard loads data from backend APIs and updates when new entries are added"
+        "New hooks exist in frontend/src/hooks/useQueries.ts for listing and mutating COGS items, purchases, and sales, matching the patterns used for expenses and revenue.",
+        "After create/update/delete of COGS records, the COGS summary/trend queries and the dashboard query data are invalidated/refetched so UI stays consistent.",
+        "Loading and empty states are handled similarly to existing pages (spinner during load, clear empty-state messaging)."
       ]
     },
     {
       "id": "REQ-7",
-      "text": "Implement report views that match the spreadsheet-style layout logic and are print-friendly: daily summaries, monthly expense reports, monthly profit & loss statements, 3/6/12-month reports, and annual summaries, with PDF/export-ready printing via browser print styles.",
+      "text": "Integrate COGS into existing dashboard and reports so that KPI and report calculations use the computed COGS value and display it alongside revenue/expenses, including print views where applicable.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "Ability to generate and print:\n\n* Daily summaries\n* Monthly expense reports\n* Monthly Profit & Loss statements\n* 3-month, 6-month, and 12-month reports\n* Annual summaries\n\nReports must be:\n\n* Print-friendly\n* PDF/export-ready\n* Audit-friendly"
+          "Calculate total COGS for reporting"
         ]
       },
       "acceptanceCriteria": [
-        "Each requested report type is accessible from a Reports section with date/month/year selectors as appropriate",
-        "Reports render in a clean, table-based accounting layout suitable for printing",
-        "Print CSS ensures readable typography, proper page breaks where reasonable, and hides non-report navigation controls during printing",
-        "Users can print to PDF using the browser’s print dialog and get a clean output"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Apply a consistent, clean, professional accounting UI theme optimized for desktop: neutral gray/slate base, clear typography, readable numeric tables, and consistent green/red semantics for positive/negative performance.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Clean, professional accounting look\n* Neutral gray/slate base\n* Green for profit / positive values\n* Red for loss / negative values\n* Clear tables and readable numbers\n* Optimized for desktop use\n* Print-friendly layouts"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All primary screens (Dashboard, Expenses, Sales/Revenue, COGS, Master Data, Reports) share a consistent layout, spacing, and typography",
-        "Neutral gray/slate palette is used across the UI with green/red reserved for performance semantics",
-        "Tables align numbers consistently (e.g., right-aligned amounts) and use clear headings",
-        "Print views retain the same visual structure while removing app chrome"
+        "Dashboard KPI 'COGS' displays the computed COGS for the selected time window instead of the current placeholder value.",
+        "Reports include a displayed COGS total for the selected report range, and net profit calculations incorporate COGS (i.e., net profit = revenue - expenses - COGS) in the report summary section.",
+        "Report output remains printable using the existing print flow."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor with all logic in backend/main.mo; add backend/migration.mo only when upgrading existing stable state requires it",
-    "Frontend must not edit any files under frontend/src/components/ui or any paths listed as immutable by the system; compose those components instead",
-    "Use English for all user-facing text",
-    "Preserve the user’s Excel calculation logic 1:1; do not change calculation behavior—only translate it into code once the formulas/outputs are provided"
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not modify files under frontend/src/components/ui (compose existing shadcn components instead).",
+    "Do not modify frontend immutable hook files (frontend/src/hooks/useInternetIdentity.ts/tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
+    "Use English for all user-facing UI text added/changed by this feature."
   ],
   "nonGoals": [
-    "Build a marketing site",
-    "Implement POS features",
-    "Implement Shopify/Square/QuickBooks-like generic accounting workflows",
-    "Build a customer-facing website",
-    "Add third-party authentication beyond Internet Identity"
+    "Implementing barcode scanning, recipe-level bill of materials, or ingredient-level depletion beyond the user-entered purchases/sales quantities.",
+    "Integrating external accounting systems or third-party inventory APIs.",
+    "Real-time collaboration or multi-user shared inventory beyond the current per-caller ownership model."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -1,16 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Build a secure, desktop-optimized internal accounting web app for a ghost kitchen that replaces Excel data entry/storage while preserving the spreadsheet’s calculation logic and producing dashboard KPIs and print-friendly reports.
+**Goal:** Implement a functional Cost of Goods Sold (COGS) module with item tracking, purchase/sale recording, vendor linkage, and reporting (total COGS and monthly trends), integrated into dashboard and reports.
 
 **Planned changes:**
-- Add secure authentication via Internet Identity and enforce authenticated access across all accounting screens and backend data APIs (centralized authorization to remain future-ready for roles).
-- Implement persistent backend data models and CRUD APIs for Expenses, Sales/Revenue, COGS, Categories, Vendors, and Payment Methods, with fields aligned to the existing spreadsheet columns.
-- Build desktop-optimized form + table UIs for entering, validating, listing, editing, and deleting Expenses, Sales/Revenue, and COGS using editable dropdown master data.
-- Add master-data management screens for Categories, Vendors, and Payment Methods, including safe handling that prevents deleting items that are in use (or an equivalent safe strategy).
-- Implement a dedicated, testable calculation layer that produces category totals, monthly totals, annual summaries, profit & loss, margins, and platform fee impacts matching the provided Excel formulas 1:1, plus automated tests against sample expected outputs once available.
-- Create a KPI dashboard with selectable time windows (current day/month, last 3/6/12 months) and configurable red/green performance indicators.
-- Add a Reports section with spreadsheet-style, audit-friendly, print-ready views (daily, monthly expenses, monthly P&L, 3/6/12-month, annual) with print CSS suitable for browser “Print to PDF”.
-- Apply a consistent professional accounting UI theme (neutral gray/slate base, readable numeric tables, consistent green/red semantics, print-friendly layouts).
+- Add backend models and CRUD endpoints for COGS items (name, default unit cost, optional vendor linkage) with per-user ownership, vendor ID validation, and basic field validation.
+- Add backend models and CRUD endpoints for COGS purchases (date, item, quantity purchased, unit cost, optional vendor) with per-user ownership and validation.
+- Add backend models and CRUD endpoints for COGS sales (date, item, quantity sold) with per-user ownership and validation.
+- Add backend endpoints to compute total COGS for a date range and a monthly COGS time series trend over a requested range, with deterministic behavior and safe handling for missing purchase history.
+- Replace the static /cogs “Coming Soon” page with UI to manage COGS items, purchases, and sales, plus a summary view showing total COGS for a selected time window and a simple trend visualization.
+- Extend the frontend React Query layer with hooks for COGS items/purchases/sales CRUD and COGS total/trend queries, including appropriate cache invalidation after mutations.
+- Update dashboard and reports to display computed COGS and incorporate it into net profit calculations (revenue - expenses - COGS), including existing print views.
 
-**User-visible outcome:** Users can log in with Internet Identity, manage accounting entries and dropdown master data via clean desktop forms, view KPI dashboards over common time ranges, and generate/print audit-friendly reports whose totals and summaries match the existing Excel logic once formulas are provided.
+**User-visible outcome:** Users can manage COGS items (optionally linked to vendors), record purchases and sales, and view computed total COGS and monthly trend data; dashboard KPIs and reports show COGS and updated net profit calculations.

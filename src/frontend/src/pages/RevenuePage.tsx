@@ -3,12 +3,14 @@ import { useRevenue, useCategories } from '../hooks/useQueries';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { type RevenueEntry } from '../backend';
+import { Principal } from '@dfinity/principal';
 import NumericCell from '../components/NumericCell';
 
 export default function RevenuePage() {
@@ -132,6 +134,7 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
     e.preventDefault();
     const revenueData: RevenueEntry = {
       id: revenue?.id || BigInt(0),
+      owner: revenue?.owner || Principal.anonymous(),
       date: BigInt(new Date(formData.date).getTime() * 1000000),
       category: BigInt(formData.category),
       description: formData.description,
@@ -181,11 +184,13 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {categories.map(([id, name]) => (
-              <SelectItem key={id.toString()} value={id.toString()}>
-                {name}
-              </SelectItem>
-            ))}
+            <ScrollArea className="h-[200px]">
+              {categories.map(([id, name]) => (
+                <SelectItem key={id.toString()} value={id.toString()}>
+                  {name}
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
       </div>

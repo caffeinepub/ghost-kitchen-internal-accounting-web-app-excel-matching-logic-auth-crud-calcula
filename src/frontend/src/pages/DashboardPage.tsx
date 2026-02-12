@@ -71,7 +71,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between border-b pb-3">
               <span className="text-sm font-medium">COGS</span>
-              <span className="text-sm font-semibold">${cogs.toFixed(2)}</span>
+              <span className="text-sm font-semibold text-destructive">-${cogs.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between pt-2">
               <span className="text-base font-semibold">Net Profit</span>

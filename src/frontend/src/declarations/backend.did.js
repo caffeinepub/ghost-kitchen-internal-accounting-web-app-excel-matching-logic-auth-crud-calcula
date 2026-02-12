@@ -16,7 +16,9 @@ export const UserRole = IDL.Variant({
 export const Time = IDL.Int;
 export const ExpenseEntry = IDL.Record({
   'id' : IDL.Nat,
-  'paymentMethod' : IDL.Nat,
+  'paymentMethod' : IDL.Text,
+  'owner' : IDL.Principal,
+  'bank' : IDL.Opt(IDL.Nat),
   'date' : Time,
   'description' : IDL.Text,
   'vendor' : IDL.Nat,
@@ -25,26 +27,66 @@ export const ExpenseEntry = IDL.Record({
 });
 export const RevenueEntry = IDL.Record({
   'id' : IDL.Nat,
+  'owner' : IDL.Principal,
   'date' : Time,
   'description' : IDL.Text,
   'category' : IDL.Nat,
   'amount' : IDL.Float64,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const CogsItem = IDL.Record({
+  'id' : IDL.Nat,
+  'defaultUnitCost' : IDL.Float64,
+  'owner' : IDL.Principal,
+  'name' : IDL.Text,
+  'vendor' : IDL.Opt(IDL.Nat),
+});
+export const CogsPurchase = IDL.Record({
+  'id' : IDL.Nat,
+  'itemId' : IDL.Nat,
+  'purchaseDate' : Time,
+  'owner' : IDL.Principal,
+  'vendor' : IDL.Opt(IDL.Nat),
+  'quantity' : IDL.Float64,
+  'unitCost' : IDL.Float64,
+});
+export const CogsSale = IDL.Record({
+  'id' : IDL.Nat,
+  'itemId' : IDL.Nat,
+  'owner' : IDL.Principal,
+  'quantity' : IDL.Float64,
+  'saleDate' : Time,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'calculateCogsForPeriod' : IDL.Func([Time, Time], [IDL.Float64], ['query']),
+  'createBank' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'createCategory' : IDL.Func([IDL.Text], [IDL.Nat], []),
+  'createCogsItem' : IDL.Func(
+      [IDL.Text, IDL.Float64, IDL.Opt(IDL.Nat)],
+      [IDL.Nat],
+      [],
+    ),
+  'createCogsPurchase' : IDL.Func(
+      [IDL.Nat, Time, IDL.Float64, IDL.Float64, IDL.Opt(IDL.Nat)],
+      [IDL.Nat],
+      [],
+    ),
+  'createCogsSale' : IDL.Func([IDL.Nat, Time, IDL.Float64], [IDL.Nat], []),
   'createExpense' : IDL.Func([ExpenseEntry], [IDL.Nat], []),
-  'createPaymentMethod' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'createRevenue' : IDL.Func([RevenueEntry], [IDL.Nat], []),
   'createVendor' : IDL.Func([IDL.Text], [IDL.Nat], []),
+  'deleteBank' : IDL.Func([IDL.Nat], [], []),
   'deleteCategory' : IDL.Func([IDL.Nat], [], []),
+  'deleteCogsItem' : IDL.Func([IDL.Nat], [], []),
+  'deleteCogsPurchase' : IDL.Func([IDL.Nat], [], []),
+  'deleteCogsSale' : IDL.Func([IDL.Nat], [], []),
   'deleteExpense' : IDL.Func([IDL.Nat], [], []),
-  'deletePaymentMethod' : IDL.Func([IDL.Nat], [], []),
   'deleteRevenue' : IDL.Func([IDL.Nat], [], []),
   'deleteVendor' : IDL.Func([IDL.Nat], [], []),
+  'getBanks' : IDL.Func([], [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCategories' : IDL.Func(
@@ -52,12 +94,16 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
       ['query'],
     ),
-  'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
-  'getPaymentMethods' : IDL.Func(
+  'getCogsItems' : IDL.Func([], [IDL.Vec(CogsItem)], ['query']),
+  'getCogsPurchases' : IDL.Func([], [IDL.Vec(CogsPurchase)], ['query']),
+  'getCogsSales' : IDL.Func([], [IDL.Vec(CogsSale)], ['query']),
+  'getCogsTrends' : IDL.Func(
       [],
-      [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+      [IDL.Vec(IDL.Tuple(Time, IDL.Float64))],
       ['query'],
     ),
+  'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
+  'getPaymentMethods' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'getRevenueEntries' : IDL.Func([], [IDL.Vec(RevenueEntry)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -71,9 +117,20 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'updateBank' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'updateCategory' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+  'updateCogsItem' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Float64, IDL.Opt(IDL.Nat)],
+      [],
+      [],
+    ),
+  'updateCogsPurchase' : IDL.Func(
+      [IDL.Nat, IDL.Nat, Time, IDL.Float64, IDL.Float64, IDL.Opt(IDL.Nat)],
+      [],
+      [],
+    ),
+  'updateCogsSale' : IDL.Func([IDL.Nat, IDL.Nat, Time, IDL.Float64], [], []),
   'updateExpense' : IDL.Func([IDL.Nat, ExpenseEntry], [], []),
-  'updatePaymentMethod' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'updateRevenue' : IDL.Func([IDL.Nat, RevenueEntry], [], []),
   'updateVendor' : IDL.Func([IDL.Nat, IDL.Text], [], []),
 });
@@ -89,7 +146,9 @@ export const idlFactory = ({ IDL }) => {
   const Time = IDL.Int;
   const ExpenseEntry = IDL.Record({
     'id' : IDL.Nat,
-    'paymentMethod' : IDL.Nat,
+    'paymentMethod' : IDL.Text,
+    'owner' : IDL.Principal,
+    'bank' : IDL.Opt(IDL.Nat),
     'date' : Time,
     'description' : IDL.Text,
     'vendor' : IDL.Nat,
@@ -98,26 +157,70 @@ export const idlFactory = ({ IDL }) => {
   });
   const RevenueEntry = IDL.Record({
     'id' : IDL.Nat,
+    'owner' : IDL.Principal,
     'date' : Time,
     'description' : IDL.Text,
     'category' : IDL.Nat,
     'amount' : IDL.Float64,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const CogsItem = IDL.Record({
+    'id' : IDL.Nat,
+    'defaultUnitCost' : IDL.Float64,
+    'owner' : IDL.Principal,
+    'name' : IDL.Text,
+    'vendor' : IDL.Opt(IDL.Nat),
+  });
+  const CogsPurchase = IDL.Record({
+    'id' : IDL.Nat,
+    'itemId' : IDL.Nat,
+    'purchaseDate' : Time,
+    'owner' : IDL.Principal,
+    'vendor' : IDL.Opt(IDL.Nat),
+    'quantity' : IDL.Float64,
+    'unitCost' : IDL.Float64,
+  });
+  const CogsSale = IDL.Record({
+    'id' : IDL.Nat,
+    'itemId' : IDL.Nat,
+    'owner' : IDL.Principal,
+    'quantity' : IDL.Float64,
+    'saleDate' : Time,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'calculateCogsForPeriod' : IDL.Func([Time, Time], [IDL.Float64], ['query']),
+    'createBank' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'createCategory' : IDL.Func([IDL.Text], [IDL.Nat], []),
+    'createCogsItem' : IDL.Func(
+        [IDL.Text, IDL.Float64, IDL.Opt(IDL.Nat)],
+        [IDL.Nat],
+        [],
+      ),
+    'createCogsPurchase' : IDL.Func(
+        [IDL.Nat, Time, IDL.Float64, IDL.Float64, IDL.Opt(IDL.Nat)],
+        [IDL.Nat],
+        [],
+      ),
+    'createCogsSale' : IDL.Func([IDL.Nat, Time, IDL.Float64], [IDL.Nat], []),
     'createExpense' : IDL.Func([ExpenseEntry], [IDL.Nat], []),
-    'createPaymentMethod' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'createRevenue' : IDL.Func([RevenueEntry], [IDL.Nat], []),
     'createVendor' : IDL.Func([IDL.Text], [IDL.Nat], []),
+    'deleteBank' : IDL.Func([IDL.Nat], [], []),
     'deleteCategory' : IDL.Func([IDL.Nat], [], []),
+    'deleteCogsItem' : IDL.Func([IDL.Nat], [], []),
+    'deleteCogsPurchase' : IDL.Func([IDL.Nat], [], []),
+    'deleteCogsSale' : IDL.Func([IDL.Nat], [], []),
     'deleteExpense' : IDL.Func([IDL.Nat], [], []),
-    'deletePaymentMethod' : IDL.Func([IDL.Nat], [], []),
     'deleteRevenue' : IDL.Func([IDL.Nat], [], []),
     'deleteVendor' : IDL.Func([IDL.Nat], [], []),
+    'getBanks' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCategories' : IDL.Func(
@@ -125,12 +228,16 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
         ['query'],
       ),
-    'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
-    'getPaymentMethods' : IDL.Func(
+    'getCogsItems' : IDL.Func([], [IDL.Vec(CogsItem)], ['query']),
+    'getCogsPurchases' : IDL.Func([], [IDL.Vec(CogsPurchase)], ['query']),
+    'getCogsSales' : IDL.Func([], [IDL.Vec(CogsSale)], ['query']),
+    'getCogsTrends' : IDL.Func(
         [],
-        [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+        [IDL.Vec(IDL.Tuple(Time, IDL.Float64))],
         ['query'],
       ),
+    'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
+    'getPaymentMethods' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'getRevenueEntries' : IDL.Func([], [IDL.Vec(RevenueEntry)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -144,9 +251,20 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'updateBank' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'updateCategory' : IDL.Func([IDL.Nat, IDL.Text], [], []),
+    'updateCogsItem' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Float64, IDL.Opt(IDL.Nat)],
+        [],
+        [],
+      ),
+    'updateCogsPurchase' : IDL.Func(
+        [IDL.Nat, IDL.Nat, Time, IDL.Float64, IDL.Float64, IDL.Opt(IDL.Nat)],
+        [],
+        [],
+      ),
+    'updateCogsSale' : IDL.Func([IDL.Nat, IDL.Nat, Time, IDL.Float64], [], []),
     'updateExpense' : IDL.Func([IDL.Nat, ExpenseEntry], [], []),
-    'updatePaymentMethod' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'updateRevenue' : IDL.Func([IDL.Nat, RevenueEntry], [], []),
     'updateVendor' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   });

@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { type UserProfile, type ExpenseEntry, type RevenueEntry } from '../backend';
+import { type UserProfile, type ExpenseEntry, type RevenueEntry, type CogsItem, type CogsPurchase, type CogsSale } from '../backend';
 import { type TimeWindow } from '../components/TimeWindowSelector';
+import { PAYMENT_METHODS } from '../lib/constants/paymentMethods';
+import { RESTAURANT_CATEGORIES, CATEGORY_SEED_VERSION, CATEGORY_SEED_KEY } from '../lib/seed/restaurantCategories';
+import { useEffect, useState } from 'react';
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
@@ -39,9 +42,11 @@ export function useSaveCallerUserProfile() {
   });
 }
 
-// Categories Queries
+// Categories Queries with auto-seeding
 export function useCategories() {
   const { actor, isFetching: actorFetching } = useActor();
+  const queryClient = useQueryClient();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const query = useQuery<Array<[bigint, string]>>({
     queryKey: ['categories'],
@@ -52,7 +57,36 @@ export function useCategories() {
     enabled: !!actor && !actorFetching,
   });
 
-  const queryClient = useQueryClient();
+  // Auto-seed restaurant categories on first load
+  useEffect(() => {
+    const seedCategories = async () => {
+      if (!actor || actorFetching || isSeeding) return;
+      
+      const seedKey = `${CATEGORY_SEED_KEY}-${CATEGORY_SEED_VERSION}`;
+      const alreadySeeded = localStorage.getItem(seedKey);
+      
+      // Only seed if we have data, it's empty, and we haven't seeded before
+      if (query.data && query.data.length === 0 && !alreadySeeded) {
+        setIsSeeding(true);
+        try {
+          // Create all default categories
+          for (const categoryName of RESTAURANT_CATEGORIES) {
+            await actor.createCategory(categoryName);
+          }
+          // Mark as seeded
+          localStorage.setItem(seedKey, 'true');
+          // Refetch categories
+          queryClient.invalidateQueries({ queryKey: ['categories'] });
+        } catch (error) {
+          console.error('Failed to seed categories:', error);
+        } finally {
+          setIsSeeding(false);
+        }
+      }
+    };
+
+    seedCategories();
+  }, [actor, actorFetching, query.data, isSeeding, queryClient]);
 
   const createCategory = useMutation({
     mutationFn: async (name: string) => {
@@ -86,6 +120,7 @@ export function useCategories() {
 
   return {
     ...query,
+    isLoading: query.isLoading || isSeeding,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -145,57 +180,76 @@ export function useVendors() {
   };
 }
 
-// Payment Methods Queries
-export function usePaymentMethods() {
+// Banks Queries
+export function useBanks() {
   const { actor, isFetching: actorFetching } = useActor();
 
   const query = useQuery<Array<[bigint, string]>>({
-    queryKey: ['paymentMethods'],
+    queryKey: ['banks'],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getPaymentMethods();
+      return actor.getBanks();
     },
     enabled: !!actor && !actorFetching,
   });
 
   const queryClient = useQueryClient();
 
-  const createPaymentMethod = useMutation({
-    mutationFn: async (method: string) => {
+  const createBank = useMutation({
+    mutationFn: async (name: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.createPaymentMethod(method);
+      return actor.createBank(name);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
     },
   });
 
-  const updatePaymentMethod = useMutation({
-    mutationFn: async ({ id, method }: { id: bigint; method: string }) => {
+  const updateBank = useMutation({
+    mutationFn: async ({ id, name }: { id: bigint; name: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updatePaymentMethod(id, method);
+      return actor.updateBank(id, name);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
     },
   });
 
-  const deletePaymentMethod = useMutation({
+  const deleteBank = useMutation({
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deletePaymentMethod(id);
+      return actor.deleteBank(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+      queryClient.invalidateQueries({ queryKey: ['banks'] });
     },
   });
 
   return {
     ...query,
-    createPaymentMethod,
-    updatePaymentMethod,
-    deletePaymentMethod,
+    createBank,
+    updateBank,
+    deleteBank,
   };
+}
+
+// Payment Methods Query - Fixed list, read-only
+export function usePaymentMethods() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<string[]>({
+    queryKey: ['paymentMethods'],
+    queryFn: async () => {
+      if (!actor) return [];
+      // Backend returns the fixed list, but we ensure it matches our constants
+      const backendMethods = await actor.getPaymentMethods();
+      // Use our fixed list as source of truth
+      return PAYMENT_METHODS.slice();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+
+  return query;
 }
 
 // Expenses Queries
@@ -310,14 +364,220 @@ export function useRevenue() {
   };
 }
 
+// COGS Items Queries
+export function useCogsItems() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<CogsItem[]>({
+    queryKey: ['cogsItems'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCogsItems();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+
+  const queryClient = useQueryClient();
+
+  const createItem = useMutation({
+    mutationFn: async ({ name, defaultUnitCost, vendor }: { name: string; defaultUnitCost: number; vendor: bigint | null }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createCogsItem(name, defaultUnitCost, vendor);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsItems'] });
+    },
+  });
+
+  const updateItem = useMutation({
+    mutationFn: async ({ id, name, defaultUnitCost, vendor }: { id: bigint; name: string; defaultUnitCost: number; vendor: bigint | null }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateCogsItem(id, name, defaultUnitCost, vendor);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsItems'] });
+    },
+  });
+
+  const deleteItem = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteCogsItem(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsItems'] });
+    },
+  });
+
+  return {
+    ...query,
+    createItem,
+    updateItem,
+    deleteItem,
+  };
+}
+
+// COGS Purchases Queries
+export function useCogsPurchases() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<CogsPurchase[]>({
+    queryKey: ['cogsPurchases'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCogsPurchases();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+
+  const queryClient = useQueryClient();
+
+  const createPurchase = useMutation({
+    mutationFn: async ({ itemId, purchaseDate, quantity, unitCost, vendor }: { itemId: bigint; purchaseDate: bigint; quantity: number; unitCost: number; vendor: bigint | null }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createCogsPurchase(itemId, purchaseDate, quantity, unitCost, vendor);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const updatePurchase = useMutation({
+    mutationFn: async ({ id, itemId, purchaseDate, quantity, unitCost, vendor }: { id: bigint; itemId: bigint; purchaseDate: bigint; quantity: number; unitCost: number; vendor: bigint | null }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateCogsPurchase(id, itemId, purchaseDate, quantity, unitCost, vendor);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const deletePurchase = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteCogsPurchase(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  return {
+    ...query,
+    createPurchase,
+    updatePurchase,
+    deletePurchase,
+  };
+}
+
+// COGS Sales Queries
+export function useCogsSales() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<CogsSale[]>({
+    queryKey: ['cogsSales'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCogsSales();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+
+  const queryClient = useQueryClient();
+
+  const createSale = useMutation({
+    mutationFn: async ({ itemId, saleDate, quantity }: { itemId: bigint; saleDate: bigint; quantity: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createCogsSale(itemId, saleDate, quantity);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const updateSale = useMutation({
+    mutationFn: async ({ id, itemId, saleDate, quantity }: { id: bigint; itemId: bigint; saleDate: bigint; quantity: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateCogsSale(id, itemId, saleDate, quantity);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const deleteSale = useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteCogsSale(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  return {
+    ...query,
+    createSale,
+    updateSale,
+    deleteSale,
+  };
+}
+
+// COGS Total Query
+export function useCogsTotal(startDate: bigint, endDate: bigint) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<number>({
+    queryKey: ['cogsTotal', startDate.toString(), endDate.toString()],
+    queryFn: async () => {
+      if (!actor) return 0;
+      return actor.calculateCogsForPeriod(startDate, endDate);
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+// COGS Trends Query
+export function useCogsTrends() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Array<[bigint, number]>>({
+    queryKey: ['cogsTrends'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCogsTrends();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
 // Dashboard Data Query
 export function useDashboardData(timeWindow: TimeWindow) {
+  const { actor, isFetching: actorFetching } = useActor();
   const { data: expenses = [] } = useExpenses();
   const { data: revenue = [] } = useRevenue();
 
   return useQuery({
     queryKey: ['dashboard', timeWindow],
-    queryFn: () => {
+    queryFn: async () => {
       const now = new Date();
       let startDate: Date;
 
@@ -340,15 +600,26 @@ export function useDashboardData(timeWindow: TimeWindow) {
       }
 
       const startTimestamp = BigInt(startDate.getTime() * 1000000);
+      const endTimestamp = BigInt(now.getTime() * 1000000);
 
       const filteredExpenses = expenses.filter((e) => e.date >= startTimestamp);
       const filteredRevenue = revenue.filter((r) => r.date >= startTimestamp);
 
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
       const totalRevenue = filteredRevenue.reduce((sum, r) => sum + r.amount, 0);
-      const netProfit = totalRevenue - totalExpenses;
+
+      // Fetch COGS for the period
+      let cogs = 0;
+      if (actor) {
+        try {
+          cogs = await actor.calculateCogsForPeriod(startTimestamp, endTimestamp);
+        } catch (error) {
+          console.error('Failed to fetch COGS:', error);
+        }
+      }
+
+      const netProfit = totalRevenue - totalExpenses - cogs;
       const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-      const cogs = 0; // Placeholder until COGS is implemented
 
       return {
         totalRevenue,
@@ -358,6 +629,6 @@ export function useDashboardData(timeWindow: TimeWindow) {
         cogs,
       };
     },
-    enabled: true,
+    enabled: !!actor && !actorFetching,
   });
 }

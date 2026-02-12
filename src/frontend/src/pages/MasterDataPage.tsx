@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCategories, useVendors, usePaymentMethods } from '../hooks/useQueries';
+import { useCategories, useVendors, usePaymentMethods, useBanks } from '../hooks/useQueries';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -7,20 +7,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Loader2, Plus, Pencil, Trash2, Info } from 'lucide-react';
 
 export default function MasterDataPage() {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Master Data</h1>
-        <p className="text-muted-foreground">Manage categories, vendors, and payment methods</p>
+        <p className="text-muted-foreground">Manage categories, vendors, banks, and payment methods</p>
       </div>
 
       <Tabs defaultValue="categories" className="space-y-4">
         <TabsList>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="vendors">Vendors</TabsTrigger>
+          <TabsTrigger value="banks">Banks</TabsTrigger>
           <TabsTrigger value="payment-methods">Payment Methods</TabsTrigger>
         </TabsList>
 
@@ -30,6 +32,10 @@ export default function MasterDataPage() {
 
         <TabsContent value="vendors">
           <VendorsTab />
+        </TabsContent>
+
+        <TabsContent value="banks">
+          <BanksTab />
         </TabsContent>
 
         <TabsContent value="payment-methods">
@@ -272,18 +278,19 @@ function VendorsTab() {
   );
 }
 
-function PaymentMethodsTab() {
-  const { data: paymentMethods = [], isLoading, createPaymentMethod, updatePaymentMethod, deletePaymentMethod } = usePaymentMethods();
+function BanksTab() {
+  const { data: banks = [], isLoading, createBank, updateBank, deleteBank } = useBanks();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<[bigint, string] | null>(null);
   const [name, setName] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
-      updatePaymentMethod.mutate({ id: editingItem[0], method: name }, { onSuccess: () => handleClose() });
+      updateBank.mutate({ id: editingItem[0], name }, { onSuccess: () => handleClose() });
     } else {
-      createPaymentMethod.mutate(name, { onSuccess: () => handleClose() });
+      createBank.mutate(name, { onSuccess: () => handleClose() });
     }
   };
 
@@ -300,8 +307,13 @@ function PaymentMethodsTab() {
   };
 
   const handleDelete = (id: bigint) => {
-    if (confirm('Are you sure you want to delete this payment method?')) {
-      deletePaymentMethod.mutate(id);
+    if (confirm('Are you sure you want to delete this bank?')) {
+      setDeleteError('');
+      deleteBank.mutate(id, {
+        onError: (error: any) => {
+          setDeleteError(error.message || 'Failed to delete bank. It may be referenced by existing expenses.');
+        },
+      });
     }
   };
 
@@ -316,26 +328,26 @@ function PaymentMethodsTab() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Payment Methods</CardTitle>
+        <CardTitle>Banks</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingItem(null)}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Payment Method
+              Add Bank
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit Payment Method' : 'Add New Payment Method'}</DialogTitle>
+              <DialogTitle>{editingItem ? 'Edit Bank' : 'Add New Bank'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Payment Method Name</Label>
+                <Label htmlFor="name">Bank Name</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter payment method name"
+                  placeholder="e.g., American Express, Capital One"
                   required
                 />
               </div>
@@ -349,7 +361,12 @@ function PaymentMethodsTab() {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {deleteError && (
+          <Alert variant="destructive">
+            <AlertDescription>{deleteError}</AlertDescription>
+          </Alert>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -358,14 +375,14 @@ function PaymentMethodsTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paymentMethods.length === 0 ? (
+            {banks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="text-center text-muted-foreground">
-                  No payment methods yet. Click "Add Payment Method" to create one.
+                  No banks yet. Click "Add Bank" to create one.
                 </TableCell>
               </TableRow>
             ) : (
-              paymentMethods.map((item) => (
+              banks.map((item) => (
                 <TableRow key={item[0].toString()}>
                   <TableCell>{item[1]}</TableCell>
                   <TableCell className="text-right">
@@ -381,6 +398,49 @@ function PaymentMethodsTab() {
                 </TableRow>
               ))
             )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PaymentMethodsTab() {
+  const { data: paymentMethods = [], isLoading } = usePaymentMethods();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payment Methods</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Payment methods are fixed and cannot be modified. These are the standard payment types available for
+            expense tracking.
+          </AlertDescription>
+        </Alert>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Payment Method</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paymentMethods.map((method) => (
+              <TableRow key={method}>
+                <TableCell>{method}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </CardContent>

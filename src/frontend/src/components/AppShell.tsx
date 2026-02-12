@@ -3,7 +3,6 @@ import { LayoutDashboard, Receipt, DollarSign, Package, Database, FileText, LogO
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
-import { SiFacebook, SiX, SiLinkedin } from 'react-icons/si';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -35,7 +34,7 @@ export default function AppShell({ children }: AppShellProps) {
       <header className="no-print border-b bg-card">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <h1 className="text-xl font-semibold">Ghost Kitchen Accounting</h1>
+            <h1 className="text-xl font-semibold">FoodBooks</h1>
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -72,16 +71,14 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Footer */}
       <footer className="no-print border-t bg-card py-4">
         <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Ghost Kitchen Accounting • Built with ❤️ using{' '}
+          © 2026-2027 FoodBooks • Built with ❤️ by{' '}
           <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
-              window.location.hostname
-            )}`}
+            href="https://sgmultimediagroup.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-foreground hover:underline"
           >
-            caffeine.ai
+            SGmultimediagroup.com
           </a>
         </div>
       </footer>

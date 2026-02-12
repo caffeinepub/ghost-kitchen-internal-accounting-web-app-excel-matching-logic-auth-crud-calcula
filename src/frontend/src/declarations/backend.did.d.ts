@@ -10,9 +10,34 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface CogsItem {
+  'id' : bigint,
+  'defaultUnitCost' : number,
+  'owner' : Principal,
+  'name' : string,
+  'vendor' : [] | [bigint],
+}
+export interface CogsPurchase {
+  'id' : bigint,
+  'itemId' : bigint,
+  'purchaseDate' : Time,
+  'owner' : Principal,
+  'vendor' : [] | [bigint],
+  'quantity' : number,
+  'unitCost' : number,
+}
+export interface CogsSale {
+  'id' : bigint,
+  'itemId' : bigint,
+  'owner' : Principal,
+  'quantity' : number,
+  'saleDate' : Time,
+}
 export interface ExpenseEntry {
   'id' : bigint,
-  'paymentMethod' : bigint,
+  'paymentMethod' : string,
+  'owner' : Principal,
+  'bank' : [] | [bigint],
   'date' : Time,
   'description' : string,
   'vendor' : bigint,
@@ -21,6 +46,7 @@ export interface ExpenseEntry {
 }
 export interface RevenueEntry {
   'id' : bigint,
+  'owner' : Principal,
   'date' : Time,
   'description' : string,
   'category' : bigint,
@@ -34,29 +60,53 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'calculateCogsForPeriod' : ActorMethod<[Time, Time], number>,
+  'createBank' : ActorMethod<[string], bigint>,
   'createCategory' : ActorMethod<[string], bigint>,
+  'createCogsItem' : ActorMethod<[string, number, [] | [bigint]], bigint>,
+  'createCogsPurchase' : ActorMethod<
+    [bigint, Time, number, number, [] | [bigint]],
+    bigint
+  >,
+  'createCogsSale' : ActorMethod<[bigint, Time, number], bigint>,
   'createExpense' : ActorMethod<[ExpenseEntry], bigint>,
-  'createPaymentMethod' : ActorMethod<[string], bigint>,
   'createRevenue' : ActorMethod<[RevenueEntry], bigint>,
   'createVendor' : ActorMethod<[string], bigint>,
+  'deleteBank' : ActorMethod<[bigint], undefined>,
   'deleteCategory' : ActorMethod<[bigint], undefined>,
+  'deleteCogsItem' : ActorMethod<[bigint], undefined>,
+  'deleteCogsPurchase' : ActorMethod<[bigint], undefined>,
+  'deleteCogsSale' : ActorMethod<[bigint], undefined>,
   'deleteExpense' : ActorMethod<[bigint], undefined>,
-  'deletePaymentMethod' : ActorMethod<[bigint], undefined>,
   'deleteRevenue' : ActorMethod<[bigint], undefined>,
   'deleteVendor' : ActorMethod<[bigint], undefined>,
+  'getBanks' : ActorMethod<[], Array<[bigint, string]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCategories' : ActorMethod<[], Array<[bigint, string]>>,
+  'getCogsItems' : ActorMethod<[], Array<CogsItem>>,
+  'getCogsPurchases' : ActorMethod<[], Array<CogsPurchase>>,
+  'getCogsSales' : ActorMethod<[], Array<CogsSale>>,
+  'getCogsTrends' : ActorMethod<[], Array<[Time, number]>>,
   'getExpenses' : ActorMethod<[], Array<ExpenseEntry>>,
-  'getPaymentMethods' : ActorMethod<[], Array<[bigint, string]>>,
+  'getPaymentMethods' : ActorMethod<[], Array<string>>,
   'getRevenueEntries' : ActorMethod<[], Array<RevenueEntry>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVendors' : ActorMethod<[], Array<[bigint, string]>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'updateBank' : ActorMethod<[bigint, string], undefined>,
   'updateCategory' : ActorMethod<[bigint, string], undefined>,
+  'updateCogsItem' : ActorMethod<
+    [bigint, string, number, [] | [bigint]],
+    undefined
+  >,
+  'updateCogsPurchase' : ActorMethod<
+    [bigint, bigint, Time, number, number, [] | [bigint]],
+    undefined
+  >,
+  'updateCogsSale' : ActorMethod<[bigint, bigint, Time, number], undefined>,
   'updateExpense' : ActorMethod<[bigint, ExpenseEntry], undefined>,
-  'updatePaymentMethod' : ActorMethod<[bigint, string], undefined>,
   'updateRevenue' : ActorMethod<[bigint, RevenueEntry], undefined>,
   'updateVendor' : ActorMethod<[bigint, string], undefined>,
 }
