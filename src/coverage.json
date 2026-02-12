@@ -1,38 +1,49 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T03:51:19.194Z",
+  "generatedAt": "2026-02-12T04:29:32.323Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
+        "summary": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/reports/MonthYearSelector.tsx",
+          "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
           "frontend/src/pages/ReportsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/reports/MonthYearSelector.tsx",
+          "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
           "frontend/src/pages/ReportsPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
+        "summary": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/reports/YearSelector.tsx",
           "frontend/src/pages/ReportsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/reports/YearSelector.tsx",
+          "frontend/src/pages/ReportsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/reports/dateRanges.ts",
+          "frontend/src/pages/ReportsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/reports/dateRanges.ts",
           "frontend/src/pages/ReportsPage.tsx"
         ]
       }
@@ -43,8 +54,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/reports/MonthYearSelector.tsx",
-    "frontend/src/components/reports/YearSelector.tsx",
+    "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
+    "frontend/src/lib/reports/dateRanges.ts",
     "frontend/src/pages/ReportsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

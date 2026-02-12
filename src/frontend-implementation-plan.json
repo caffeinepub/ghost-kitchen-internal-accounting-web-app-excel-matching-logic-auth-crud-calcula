@@ -1,48 +1,65 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Reports: Month/Year selectors for Monthly report type",
+  "title": "Reports: selectable contiguous 3- and 6-month ranges using month/year selectors",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "On Reports > Report Configuration, replace the Monthly report’s day-based date selection with explicit Month and Year selectors that drive the existing start/end date range and printing.",
+      "summary": "Replace the 3 Months “Reference Date” date picker with a month/year selector that chooses a contiguous 3-month window.",
       "acceptanceCriteria": [
-        "When Report Type = \"Monthly\", the UI shows a clear Month selector and Year selector (English labels).",
-        "Changing Month/Year updates the computed startDate/endDate used for filtering revenue/expenses/COGS totals to the selected calendar month.",
-        "The page’s \"Financial Summary - … to …\" header reflects the selected month’s date range.",
-        "The \"Print Report\" action prints the report for the currently selected month/year without requiring the user to manually pick a specific day."
+        "When Report Type = \"3 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 3-month period.",
+        "The computed report period covers exactly 3 full consecutive calendar months (inclusive), based on the user’s selection.",
+        "The Financial Summary header reflects the correct start and end dates for the selected 3-month range.",
+        "No runtime errors occur when switching between Monthly and 3 Months report types."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/reports/MonthYearSelector.tsx",
+          "path": "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
           "operation": "create",
-          "description": "Create a small, reusable Month+Year selector composed from existing shadcn/ui Select components (do not edit frontend/src/components/ui). Expose controlled props (month, year, onMonthChange, onYearChange) and render English labels or allow caller-provided labels. Verify the component's usage instructions before implementing."
+          "description": "Create a reusable month/year-based selector component for choosing the start month/year of a contiguous multi-month window (configured for 3 months here) and displaying appropriate labels/hints about the resulting range."
         },
         {
           "path": "frontend/src/pages/ReportsPage.tsx",
           "operation": "modify",
-          "description": "Update Report Configuration so that when Report Type is Monthly, the date input is replaced by the MonthYearSelector (Month + Year). Ensure the selected month/year drives the existing startDate/endDate computation (calendar month start through month end) and that the Financial Summary header and Print Report use the currently selected month/year-derived range. Verify the component's usage instructions before implementing."
+          "description": "Update the Reports configuration UI so that when reportType is '3month' it renders MultiMonthRangeSelector (month/year) instead of the 'Reference Date' <input type=\"date\">; add state for the selected 3-month window start month/year and ensure switching between 'monthly' and '3month' keeps selector state valid (no NaN dates)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Keep non-monthly report type behavior intact and make date-related inputs consistent and understandable for each report type.",
+      "summary": "Replace the 6 Months “Reference Date” date picker with a month/year selector that chooses a contiguous 6-month window.",
       "acceptanceCriteria": [
-        "Daily reports still allow selecting an exact date.",
-        "3 Months / 6 Months still compute ranges relative to the user-selected reference date (or an equivalent clearly labeled reference control).",
-        "Annual reports still allow selecting a year (either via the existing date input or a dedicated year selector), and the computed range remains Jan 1 through Dec 31 of that year."
+        "When Report Type = \"6 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 6-month period.",
+        "The computed report period covers exactly 6 full consecutive calendar months (inclusive), based on the user’s selection.",
+        "The Financial Summary header reflects the correct start and end dates for the selected 6-month range.",
+        "No runtime errors occur when switching between Monthly and 6 Months report types."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/reports/YearSelector.tsx",
+          "path": "frontend/src/pages/ReportsPage.tsx",
+          "operation": "modify",
+          "description": "Update the Reports configuration UI so that when reportType is '6month' it renders MultiMonthRangeSelector configured for a 6-month window; add/extend state for the 6-month window start month/year (may share the same start-month state as 3-month) and ensure switching between 'monthly' and '6month' keeps selector state valid (no NaN dates)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Centralize and standardize report date-range calculations for Monthly, 3 Months, and 6 Months as full-month windows independent of arbitrary day-based reference dates.",
+      "acceptanceCriteria": [
+        "For Monthly, 3 Months, and 6 Months report types, startDate is the first day of the first selected month and endDate is the last day of the last month in the window (end-of-day).",
+        "Switching report types preserves/updates relevant selector state without causing invalid dates or NaN timestamps.",
+        "Expenses, revenue, and COGS queries/filtering use the updated start/end timestamps and display correct results for the selected windows."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/reports/dateRanges.ts",
           "operation": "create",
-          "description": "Create a simple Year selector composed from existing shadcn/ui Select components (do not edit frontend/src/components/ui), suitable for Annual report configuration. Provide controlled props (year, onChange) and English labeling support. Verify the component's usage instructions before implementing."
+          "description": "Add shared, well-tested utility functions to compute full-month windows (monthly, 3 months, 6 months) from a selected start month/year (start = first day of first month; end = last day of last month at end-of-day), and optionally a helper for daily ranges."
         },
         {
           "path": "frontend/src/pages/ReportsPage.tsx",
           "operation": "modify",
-          "description": "Adjust the Report Configuration inputs per report type: Daily keeps an exact date input; 3 Months/6 Months keep a date input but relabel it to an English, clearer meaning (e.g., \"Reference Date\") while preserving existing range logic; Annual uses the new YearSelector (or an equivalent clear control) and keeps the computed range as Jan 1–Dec 31 for the selected year. Ensure UI remains consistent across type switches without altering report calculations beyond the derived start/end range. Verify the component's usage instructions before implementing."
+          "description": "Refactor useMemo date-range computation to use the new dateRanges utilities for 'monthly', '3month', and '6month' (full-month windows), removing reliance on selectedDate for multi-month report types; keep startTimestamp/endTimestamp derivation and ensure downstream filtering and COGS query use the updated timestamps."
         }
       ]
     }

@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Allow users to explicitly select the month and year for Monthly reports on the Reports page before running/printing.
+**Goal:** Let users choose specific contiguous 3-month and 6-month report windows on the Reports page using a month/year selector (full-month ranges), and ensure consistent date-range calculations across Monthly, 3 Months, and 6 Months report types.
 
 **Planned changes:**
-- Update the Reports page “Report Configuration” so that when Report Type = “Monthly”, the UI shows a Month selector and Year selector (English labels).
-- Derive the report startDate/endDate from the selected month/year and use that range for existing revenue/expenses/COGS totals filtering.
-- Update the “Financial Summary - … to …” header to reflect the selected month’s computed date range.
-- Ensure “Print Report” prints using the currently selected month/year for Monthly reports.
-- Preserve existing behavior for other report types (Daily date selection; 3/6 Months range relative to a reference date control; Annual year selection with Jan 1–Dec 31 range), keeping inputs understandable and consistent with the selected report type.
+- Replace the current single “Reference Date” picker for the “3 Months” report type with a month/year-based selector that computes an exact 3-consecutive-month (full calendar month) range.
+- Replace the current single “Reference Date” picker for the “6 Months” report type with a month/year-based selector that computes an exact 6-consecutive-month (full calendar month) range.
+- Standardize report start/end date calculation so Monthly / 3 Months / 6 Months all use full-month windows (start = first day of first month; end = last day of last month, end-of-day), and ensure switching between report types does not cause runtime errors or invalid dates.
+- Ensure report filtering/queries and the Financial Summary header reflect the selected computed start/end dates for multi-month windows.
 
-**User-visible outcome:** On Monthly reports, users can choose a specific month and year, see the correct date range reflected in the summary header, and print the report for that selected month without picking an arbitrary day; other report types continue to work as before.
+**User-visible outcome:** On the Reports tab, users can select which contiguous 3-month or 6-month period they want (via month/year selection), and the report data and header dates correctly match the chosen full-month range without errors when switching report types.

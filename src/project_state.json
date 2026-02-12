@@ -4,23 +4,31 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Monthly Report Type in Report Configuration does not allow selecting month/year; user cannot choose which period to run/print"
+    "Reports tab error: 'Report for 3 months' and 'Print report 6 months' do not allow choosing the desired contiguous 3- or 6-month range (should work like monthly report selection)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-reports-page-report-configuration-so-that-when-report-type-is-set-to-monthly-the-user-can-explicitly-choose-the-report-month-and-year-instead-of-relying-on-an-arbitrary-day-based-date-picker-before-running-printing-the-report",
-      "title": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
+      "id": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-3-months-the-user-can-select-a-specific-contiguous-3-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
+      "title": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-preserve-existing-behavior-for-other-report-types-daily-3-months-6-months-annual-while-ensuring-the-date-month-year-inputs-remain-understandable-and-consistent-with-the-selected-report-type",
-      "title": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
+      "id": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-6-months-the-user-can-select-a-specific-contiguous-6-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
+      "title": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-report-date-range-calculation-logic-in-the-reports-page-is-consistent-across-monthly-3-months-and-6-months-selections-full-month-windows-and-does-not-rely-on-arbitrary-day-based-reference-dates-for-multi-month-report-types",
+      "title": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -28,12 +36,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Report tab: Monthly report configuration should allow selecting (or prompt for) month and year to run/print the report",
+      "summary": "Reports tab: allow selecting a specific contiguous 3-month date range for the 'Report for 3 months' option (like monthly report selection)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Reports tab: allow selecting a specific contiguous 6-month date range for the 'Print report 6 months' option",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Reports: Monthly report must allow selecting month and year",
+  "projectName": "Reports tab: allow selecting contiguous 3-month and 6-month report ranges",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

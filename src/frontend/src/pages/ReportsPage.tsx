@@ -8,7 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loader2, Printer } from 'lucide-react';
 import NumericCell from '../components/NumericCell';
 import MonthYearSelector from '../components/reports/MonthYearSelector';
+import MultiMonthRangeSelector from '../components/reports/MultiMonthRangeSelector';
 import YearSelector from '../components/reports/YearSelector';
+import { getMonthRange, get3MonthRange, get6MonthRange, getYearRange, getDayRange } from '../lib/reports/dateRanges';
 
 type ReportType = 'daily' | 'monthly' | '3month' | '6month' | '1year';
 
@@ -17,6 +19,8 @@ export default function ReportsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [multiMonthStartMonth, setMultiMonthStartMonth] = useState(new Date().getMonth() + 1);
+  const [multiMonthStartYear, setMultiMonthStartYear] = useState(new Date().getFullYear());
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [bankFilter, setBankFilter] = useState<string>('all');
 
@@ -27,37 +31,21 @@ export default function ReportsPage() {
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
 
   const { startDate, endDate } = useMemo(() => {
-    let start: Date;
-    let end: Date;
-
     switch (reportType) {
       case 'daily':
-        const date = new Date(selectedDate);
-        start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-        break;
+        return getDayRange(selectedDate);
       case 'monthly':
-        start = new Date(selectedYear, selectedMonth - 1, 1);
-        end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
-        break;
+        return getMonthRange(selectedYear, selectedMonth);
       case '3month':
-        const refDate3 = new Date(selectedDate);
-        start = new Date(refDate3.getFullYear(), refDate3.getMonth() - 2, 1);
-        end = new Date(refDate3.getFullYear(), refDate3.getMonth() + 1, 0, 23, 59, 59);
-        break;
+        return get3MonthRange(multiMonthStartYear, multiMonthStartMonth);
       case '6month':
-        const refDate6 = new Date(selectedDate);
-        start = new Date(refDate6.getFullYear(), refDate6.getMonth() - 5, 1);
-        end = new Date(refDate6.getFullYear(), refDate6.getMonth() + 1, 0, 23, 59, 59);
-        break;
+        return get6MonthRange(multiMonthStartYear, multiMonthStartMonth);
       case '1year':
-        start = new Date(selectedYear, 0, 1);
-        end = new Date(selectedYear, 11, 31, 23, 59, 59);
-        break;
+        return getYearRange(selectedYear);
+      default:
+        return getMonthRange(selectedYear, selectedMonth);
     }
-
-    return { startDate: start, endDate: end };
-  }, [reportType, selectedDate, selectedMonth, selectedYear]);
+  }, [reportType, selectedDate, selectedMonth, selectedYear, multiMonthStartMonth, multiMonthStartYear]);
 
   const startTimestamp = BigInt(startDate.getTime() * 1000000);
   const endTimestamp = BigInt(endDate.getTime() * 1000000);
@@ -171,15 +159,37 @@ export default function ReportsPage() {
                 </div>
               )}
 
+              {reportType === '3month' && (
+                <div className="md:col-span-1 lg:col-span-3">
+                  <MultiMonthRangeSelector
+                    startMonth={multiMonthStartMonth}
+                    startYear={multiMonthStartYear}
+                    onStartMonthChange={setMultiMonthStartMonth}
+                    onStartYearChange={setMultiMonthStartYear}
+                    monthCount={3}
+                  />
+                </div>
+              )}
+
+              {reportType === '6month' && (
+                <div className="md:col-span-1 lg:col-span-3">
+                  <MultiMonthRangeSelector
+                    startMonth={multiMonthStartMonth}
+                    startYear={multiMonthStartYear}
+                    onStartMonthChange={setMultiMonthStartMonth}
+                    onStartYearChange={setMultiMonthStartYear}
+                    monthCount={6}
+                  />
+                </div>
+              )}
+
               {reportType === '1year' && (
                 <YearSelector year={selectedYear} onChange={setSelectedYear} />
               )}
 
-              {(reportType === 'daily' || reportType === '3month' || reportType === '6month') && (
+              {reportType === 'daily' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {reportType === 'daily' ? 'Date' : 'Reference Date'}
-                  </label>
+                  <label className="text-sm font-medium">Date</label>
                   <input
                     type="date"
                     value={selectedDate}

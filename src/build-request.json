@@ -1,55 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Reports: Monthly report must allow selecting month and year",
-  "priority": "normal",
+  "title": "Reports tab: allow selecting contiguous 3-month and 6-month report ranges",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
+      "text": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-1"
         ],
         "quotes": [
-          "on Report tab, Report Configuration\nReport Type: Monthly - It does not let me select what month and year I want to print. it has to ask me. or I need to be able to select the month that I want to run the report"
+          "error on the reports tab, the option:  report for 3 months i should be able to pick the range of 3 months that i want kinda the same way with the for monthly report, but now for 3 months in row only"
         ]
       },
       "acceptanceCriteria": [
-        "When Report Type = \"Monthly\", the UI shows a clear Month selector and Year selector (English labels).",
-        "Changing Month/Year updates the computed startDate/endDate used for filtering revenue/expenses/COGS totals to the selected calendar month.",
-        "The page’s \"Financial Summary - … to …\" header reflects the selected month’s date range.",
-        "The \"Print Report\" action prints the report for the currently selected month/year without requiring the user to manually pick a specific day."
+        "When Report Type = \"3 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 3-month period.",
+        "The computed report period covers exactly 3 full consecutive calendar months (inclusive), based on the user’s selection.",
+        "The Financial Summary header reflects the correct start and end dates for the selected 3-month range.",
+        "No runtime errors occur when switching between Monthly and 3 Months report types."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
+      "text": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-1"
         ],
         "quotes": [
-          "Report Type: Monthly - It does not let me select what month and year I want to print."
+          "and for the option print report 6 months report the same way i need the option to pick 6 months in row."
         ]
       },
       "acceptanceCriteria": [
-        "Daily reports still allow selecting an exact date.",
-        "3 Months / 6 Months still compute ranges relative to the user-selected reference date (or an equivalent clearly labeled reference control).",
-        "Annual reports still allow selecting a year (either via the existing date input or a dedicated year selector), and the computed range remains Jan 1 through Dec 31 of that year."
+        "When Report Type = \"6 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 6-month period.",
+        "The computed report period covers exactly 6 full consecutive calendar months (inclusive), based on the user’s selection.",
+        "The Financial Summary header reflects the correct start and end dates for the selected 6-month range.",
+        "No runtime errors occur when switching between Monthly and 6 Months report types."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "i should be able to pick the range of 3 months that i want kinda the same way with the for monthly report"
+        ]
+      },
+      "acceptanceCriteria": [
+        "For Monthly, 3 Months, and 6 Months report types, startDate is the first day of the first selected month and endDate is the last day of the last month in the window (end-of-day).",
+        "Switching report types preserves/updates relevant selector state without causing invalid dates or NaN timestamps.",
+        "Expenses, revenue, and COGS queries/filtering use the updated start/end timestamps and display correct results for the selected windows."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Do not edit files under frontend/src/components/ui (compose existing UI components instead).",
-    "Do not modify frontend immutable hook/entry files listed in SYSTEM_CONTEXT (e.g., frontend/src/main.tsx, frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts)."
+    "Do not modify files under frontend/src/components/ui (Shadcn components); compose them instead.",
+    "Do not edit frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, or frontend/src/main.tsx (immutable paths).",
+    "Keep all backend logic in the existing single Motoko actor; no backend changes are required for this request."
   ],
   "nonGoals": [
-    "No backend/canister changes are required for this request.",
-    "No changes to report calculations beyond using the user-selected month/year to derive the existing start/end date range.",
-    "No new export formats (PDF/CSV) or emailing/sharing features."
+    "Adding new backend report endpoints or changing backend data schemas.",
+    "Changing the printing mechanism beyond ensuring the selected 3- and 6-month ranges are printable with correct dates."
   ],
   "imageRequirements": {
     "required": [],
