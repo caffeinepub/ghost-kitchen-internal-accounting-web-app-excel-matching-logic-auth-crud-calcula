@@ -57,6 +57,7 @@ export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface YearMonthBucket { 'month' : bigint, 'year' : bigint }
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
@@ -87,7 +88,7 @@ export interface _SERVICE {
   'getCogsItems' : ActorMethod<[], Array<CogsItem>>,
   'getCogsPurchases' : ActorMethod<[], Array<CogsPurchase>>,
   'getCogsSales' : ActorMethod<[], Array<CogsSale>>,
-  'getCogsTrends' : ActorMethod<[], Array<[Time, number]>>,
+  'getCogsTrends' : ActorMethod<[], Array<[YearMonthBucket, number]>>,
   'getExpenses' : ActorMethod<[], Array<ExpenseEntry>>,
   'getPaymentMethods' : ActorMethod<[], Array<string>>,
   'getRevenueEntries' : ActorMethod<[], Array<RevenueEntry>>,

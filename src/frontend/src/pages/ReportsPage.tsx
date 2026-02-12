@@ -7,12 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Loader2, Printer } from 'lucide-react';
 import NumericCell from '../components/NumericCell';
+import MonthYearSelector from '../components/reports/MonthYearSelector';
+import YearSelector from '../components/reports/YearSelector';
 
 type ReportType = 'daily' | 'monthly' | '3month' | '6month' | '1year';
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('monthly');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [bankFilter, setBankFilter] = useState<string>('all');
 
@@ -23,35 +27,37 @@ export default function ReportsPage() {
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
 
   const { startDate, endDate } = useMemo(() => {
-    const date = new Date(selectedDate);
     let start: Date;
     let end: Date;
 
     switch (reportType) {
       case 'daily':
+        const date = new Date(selectedDate);
         start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
         break;
       case 'monthly':
-        start = new Date(date.getFullYear(), date.getMonth(), 1);
-        end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+        start = new Date(selectedYear, selectedMonth - 1, 1);
+        end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59);
         break;
       case '3month':
-        start = new Date(date.getFullYear(), date.getMonth() - 2, 1);
-        end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+        const refDate3 = new Date(selectedDate);
+        start = new Date(refDate3.getFullYear(), refDate3.getMonth() - 2, 1);
+        end = new Date(refDate3.getFullYear(), refDate3.getMonth() + 1, 0, 23, 59, 59);
         break;
       case '6month':
-        start = new Date(date.getFullYear(), date.getMonth() - 5, 1);
-        end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+        const refDate6 = new Date(selectedDate);
+        start = new Date(refDate6.getFullYear(), refDate6.getMonth() - 5, 1);
+        end = new Date(refDate6.getFullYear(), refDate6.getMonth() + 1, 0, 23, 59, 59);
         break;
       case '1year':
-        start = new Date(date.getFullYear(), 0, 1);
-        end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
+        start = new Date(selectedYear, 0, 1);
+        end = new Date(selectedYear, 11, 31, 23, 59, 59);
         break;
     }
 
     return { startDate: start, endDate: end };
-  }, [reportType, selectedDate]);
+  }, [reportType, selectedDate, selectedMonth, selectedYear]);
 
   const startTimestamp = BigInt(startDate.getTime() * 1000000);
   const endTimestamp = BigInt(endDate.getTime() * 1000000);
@@ -136,65 +142,86 @@ export default function ReportsPage() {
           <CardTitle>Report Configuration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Report Type</label>
-              <Select value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="3month">3 Months</SelectItem>
-                  <SelectItem value="6month">6 Months</SelectItem>
-                  <SelectItem value="1year">Annual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Report Type</label>
+                <Select value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="3month">3 Months</SelectItem>
+                    <SelectItem value="6month">6 Months</SelectItem>
+                    <SelectItem value="1year">Annual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
+              {reportType === 'monthly' && (
+                <div className="md:col-span-1 lg:col-span-3">
+                  <MonthYearSelector
+                    month={selectedMonth}
+                    year={selectedYear}
+                    onMonthChange={setSelectedMonth}
+                    onYearChange={setSelectedYear}
+                  />
+                </div>
+              )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Payment Method</label>
-              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Methods</SelectItem>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {reportType === '1year' && (
+                <YearSelector year={selectedYear} onChange={setSelectedYear} />
+              )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bank</label>
-              <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Banks</SelectItem>
-                  {banks.map(([id, name]) => (
-                    <SelectItem key={id.toString()} value={id.toString()}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(reportType === 'daily' || reportType === '3month' || reportType === '6month') && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {reportType === 'daily' ? 'Date' : 'Reference Date'}
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Payment Method</label>
+                <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Methods</SelectItem>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bank</label>
+                <Select value={bankFilter} onValueChange={setBankFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Banks</SelectItem>
+                    {banks.map(([id, name]) => (
+                      <SelectItem key={id.toString()} value={id.toString()}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -1,15 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Implement a functional Cost of Goods Sold (COGS) module with item tracking, purchase/sale recording, vendor linkage, and reporting (total COGS and monthly trends), integrated into dashboard and reports.
+**Goal:** Allow users to explicitly select the month and year for Monthly reports on the Reports page before running/printing.
 
 **Planned changes:**
-- Add backend models and CRUD endpoints for COGS items (name, default unit cost, optional vendor linkage) with per-user ownership, vendor ID validation, and basic field validation.
-- Add backend models and CRUD endpoints for COGS purchases (date, item, quantity purchased, unit cost, optional vendor) with per-user ownership and validation.
-- Add backend models and CRUD endpoints for COGS sales (date, item, quantity sold) with per-user ownership and validation.
-- Add backend endpoints to compute total COGS for a date range and a monthly COGS time series trend over a requested range, with deterministic behavior and safe handling for missing purchase history.
-- Replace the static /cogs “Coming Soon” page with UI to manage COGS items, purchases, and sales, plus a summary view showing total COGS for a selected time window and a simple trend visualization.
-- Extend the frontend React Query layer with hooks for COGS items/purchases/sales CRUD and COGS total/trend queries, including appropriate cache invalidation after mutations.
-- Update dashboard and reports to display computed COGS and incorporate it into net profit calculations (revenue - expenses - COGS), including existing print views.
+- Update the Reports page “Report Configuration” so that when Report Type = “Monthly”, the UI shows a Month selector and Year selector (English labels).
+- Derive the report startDate/endDate from the selected month/year and use that range for existing revenue/expenses/COGS totals filtering.
+- Update the “Financial Summary - … to …” header to reflect the selected month’s computed date range.
+- Ensure “Print Report” prints using the currently selected month/year for Monthly reports.
+- Preserve existing behavior for other report types (Daily date selection; 3/6 Months range relative to a reference date control; Annual year selection with Jan 1–Dec 31 range), keeping inputs understandable and consistent with the selected report type.
 
-**User-visible outcome:** Users can manage COGS items (optionally linked to vendors), record purchases and sales, and view computed total COGS and monthly trend data; dashboard KPIs and reports show COGS and updated net profit calculations.
+**User-visible outcome:** On Monthly reports, users can choose a specific month and year, see the correct date range reflected in the summary header, and print the report for that selected month without picking an arbitrary day; other report types continue to work as before.

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { type UserProfile, type ExpenseEntry, type RevenueEntry, type CogsItem, type CogsPurchase, type CogsSale } from '../backend';
+import { type UserProfile, type ExpenseEntry, type RevenueEntry, type CogsItem, type CogsPurchase, type CogsSale, type YearMonthBucket, type Time } from '../backend';
 import { type TimeWindow } from '../components/TimeWindowSelector';
 import { PAYMENT_METHODS } from '../lib/constants/paymentMethods';
 import { RESTAURANT_CATEGORIES, CATEGORY_SEED_VERSION, CATEGORY_SEED_KEY } from '../lib/seed/restaurantCategories';
@@ -439,8 +439,6 @@ export function useCogsPurchases() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -452,8 +450,6 @@ export function useCogsPurchases() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -465,8 +461,6 @@ export function useCogsPurchases() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsPurchases'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -501,9 +495,8 @@ export function useCogsSales() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
     },
   });
 
@@ -514,9 +507,8 @@ export function useCogsSales() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
     },
   });
 
@@ -527,9 +519,8 @@ export function useCogsSales() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cogsSales'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTotal'] });
-      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['cogsTrends'] });
     },
   });
 
@@ -542,16 +533,17 @@ export function useCogsSales() {
 }
 
 // COGS Total Query
-export function useCogsTotal(startDate: bigint, endDate: bigint) {
+export function useCogsTotal(startDate: Time, endDate: Time) {
   const { actor, isFetching: actorFetching } = useActor();
 
   return useQuery<number>({
     queryKey: ['cogsTotal', startDate.toString(), endDate.toString()],
     queryFn: async () => {
-      if (!actor) return 0;
+      if (!actor) throw new Error('Actor not available');
       return actor.calculateCogsForPeriod(startDate, endDate);
     },
     enabled: !!actor && !actorFetching,
+    retry: 2,
   });
 }
 
@@ -559,25 +551,26 @@ export function useCogsTotal(startDate: bigint, endDate: bigint) {
 export function useCogsTrends() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<Array<[bigint, number]>>({
+  return useQuery<Array<[YearMonthBucket, number]>>({
     queryKey: ['cogsTrends'],
     queryFn: async () => {
-      if (!actor) return [];
+      if (!actor) throw new Error('Actor not available');
       return actor.getCogsTrends();
     },
     enabled: !!actor && !actorFetching,
+    retry: 2,
   });
 }
 
 // Dashboard Data Query
 export function useDashboardData(timeWindow: TimeWindow) {
   const { actor, isFetching: actorFetching } = useActor();
-  const { data: expenses = [] } = useExpenses();
-  const { data: revenue = [] } = useRevenue();
 
   return useQuery({
     queryKey: ['dashboard', timeWindow],
     queryFn: async () => {
+      if (!actor) return null;
+
       const now = new Date();
       let startDate: Date;
 
@@ -597,36 +590,37 @@ export function useDashboardData(timeWindow: TimeWindow) {
         case '12months':
           startDate = new Date(now.getFullYear(), now.getMonth() - 12, 1);
           break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       }
 
       const startTimestamp = BigInt(startDate.getTime() * 1000000);
       const endTimestamp = BigInt(now.getTime() * 1000000);
 
-      const filteredExpenses = expenses.filter((e) => e.date >= startTimestamp);
-      const filteredRevenue = revenue.filter((r) => r.date >= startTimestamp);
+      const [expenses, revenue, cogs] = await Promise.all([
+        actor.getExpenses(),
+        actor.getRevenueEntries(),
+        actor.calculateCogsForPeriod(startTimestamp, endTimestamp),
+      ]);
+
+      const filteredExpenses = expenses.filter(
+        (e) => e.date >= startTimestamp && e.date <= endTimestamp
+      );
+      const filteredRevenue = revenue.filter(
+        (r) => r.date >= startTimestamp && r.date <= endTimestamp
+      );
 
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
       const totalRevenue = filteredRevenue.reduce((sum, r) => sum + r.amount, 0);
-
-      // Fetch COGS for the period
-      let cogs = 0;
-      if (actor) {
-        try {
-          cogs = await actor.calculateCogsForPeriod(startTimestamp, endTimestamp);
-        } catch (error) {
-          console.error('Failed to fetch COGS:', error);
-        }
-      }
-
       const netProfit = totalRevenue - totalExpenses - cogs;
       const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
       return {
-        totalRevenue,
         totalExpenses,
+        totalRevenue,
+        cogs,
         netProfit,
         profitMargin,
-        cogs,
       };
     },
     enabled: !!actor && !actorFetching,

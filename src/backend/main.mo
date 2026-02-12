@@ -10,9 +10,7 @@ import Nat "mo:core/Nat";
 import Order "mo:core/Order";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   public type UserProfile = {
     name : Text;
@@ -91,6 +89,11 @@ actor {
   var nextCogsItemId = 1;
   var nextCogsPurchaseId = 1;
   var nextCogsSaleId = 1;
+
+  type YearMonthBucket = {
+    year : Int;
+    month : Nat; // 1-12
+  };
 
   let categories = Map.empty<Nat, Text>();
   let vendors = Map.empty<Nat, Text>();
@@ -566,7 +569,24 @@ actor {
     totalPurchasesCost - totalSalesCost;
   };
 
-  public query ({ caller }) func getCogsTrends() : async [(Time.Time, Float)] {
+  func bucketToYearMonth(bucket : Int) : YearMonthBucket {
+    let monthsSinceEpoch = bucket.toNat();
+    let epochMonth = 1.toInt() + ((monthsSinceEpoch % 12).toInt());
+    let epochYear = 1970.toInt() + ((monthsSinceEpoch / 12).toInt());
+    { year = epochYear; month = (epochMonth % 12).toNat() };
+  };
+
+  func yearMonthToBucket(year : Int, month : Nat) : Int {
+    if (month < 1 or month > 12) {
+      Runtime.trap("Invalid year/month: " # year.toText() # " " # month.toText());
+    };
+    let yearsSince1970 = year - 1970.toInt();
+    let monthsFrom1970 = yearsSince1970 * 12;
+    let monthsInYear = (month - 1) : Int;
+    monthsFrom1970 + monthsInYear;
+  };
+
+  public query ({ caller }) func getCogsTrends() : async [(YearMonthBucket, Float)] {
     authorizeUser(caller);
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     
@@ -577,7 +597,7 @@ actor {
     };
     
     let bucketedSales = allSales.foldLeft(
-      Map.empty<Time.Time, Float>(),
+      Map.empty<Int, Float>(),
       func(acc, sale) {
         let bucket = sale.saleDate / (30 * 24 * 60 * 60 * 1000000000);
         let amount = switch (cogsItems.get(sale.itemId)) {
@@ -592,7 +612,12 @@ actor {
         acc;
       },
     );
-    bucketedSales.toArray();
+
+    bucketedSales.toArray().map(
+      func((bucket, amount)) {
+        (bucketToYearMonth(bucket), amount);
+      }
+    );
   };
 
   func authorizeUser(caller : Principal.Principal) {

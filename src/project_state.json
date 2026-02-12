@@ -1,32 +1,26 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "FoodBooks project with planned Cost of Goods Sold (COGS) tracking to support inventory costs, purchasing/sales quantities, vendor linkage, and reporting/trends.",
+  "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Monthly Report Type in Report Configuration does not allow selecting month/year; user cannot choose which period to run/print"
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-replace-the-current-static-coming-soon-cogs-page-with-a-functional-cogs-module-ui-that-lets-users-manage-items-record-purchases-and-sales-and-view-computed-total-cogs-and-trends-over-time",
-      "title": "Replace the current static 'Coming Soon' COGS page with a functional COGS module UI that lets users manage items, record purchases and sales, and view computed total COGS and trends over time.",
+      "id": "feature-update-the-reports-page-report-configuration-so-that-when-report-type-is-set-to-monthly-the-user-can-explicitly-choose-the-report-month-and-year-instead-of-relying-on-an-arbitrary-day-based-date-picker-before-running-printing-the-report",
+      "title": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
       "reqIds": [
-        "REQ-5"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-extend-the-react-query-data-layer-to-support-cogs-items-purchases-sales-total-cogs-and-cogs-trend-queries-mutations-and-ensure-relevant-screens-refresh-appropriately-after-mutations",
-      "title": "Extend the React Query data layer to support COGS items, purchases, sales, total COGS, and COGS trend queries/mutations, and ensure relevant screens refresh appropriately after mutations.",
+      "id": "feature-preserve-existing-behavior-for-other-report-types-daily-3-months-6-months-annual-while-ensuring-the-date-month-year-inputs-remain-understandable-and-consistent-with-the-selected-report-type",
+      "title": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
       "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-integrate-cogs-into-existing-dashboard-and-reports-so-that-kpi-and-report-calculations-use-the-computed-cogs-value-and-display-it-alongside-revenue-expenses-including-print-views-where-applicable",
-      "title": "Integrate COGS into existing dashboard and reports so that KPI and report calculations use the computed COGS value and display it alongside revenue/expenses, including print views where applicable.",
-      "reqIds": [
-        "REQ-7"
+        "REQ-2"
       ],
       "version": 1
     }
@@ -34,44 +28,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Implement Cost of Goods Sold (COGS) tracking (item costs, quantities purchased/sold, vendor linkage, COGS reporting and trends)",
+      "summary": "Report tab: Monthly report configuration should allow selecting (or prompt for) month and year to run/print the report",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add backend data models and CRUD endpoints for COGS inventory items, including item name, default unit cost, and optional vendor linkage, with per-user ownership enforcement consistent with existing Expenses/Revenue authorization behavior.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add backend data models and CRUD endpoints to record COGS purchases (inventory receipts) with date, item, quantity purchased, unit cost, and optional vendor, and enforce per-user ownership and validation.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add backend data models and CRUD endpoints to record COGS sales (inventory usage) with date, item, and quantity sold, and enforce per-user ownership and validation.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Implement backend COGS calculation endpoints that compute total COGS over a provided time window and return time-series trend data (bucketed by month) for reporting.",
-      "reqIds": [
-        "REQ-4"
-      ],
       "status": "pending"
     }
   ],
-  "projectName": "FoodBooks",
+  "projectName": "Reports: Monthly report must allow selecting month and year",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -7,6 +7,7 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export type Time = bigint;
 export interface CogsPurchase {
     id: bigint;
     itemId: bigint;
@@ -16,13 +17,23 @@ export interface CogsPurchase {
     quantity: number;
     unitCost: number;
 }
-export type Time = bigint;
+export interface YearMonthBucket {
+    month: bigint;
+    year: bigint;
+}
 export interface CogsItem {
     id: bigint;
     defaultUnitCost: number;
     owner: Principal;
     name: string;
     vendor?: bigint;
+}
+export interface CogsSale {
+    id: bigint;
+    itemId: bigint;
+    owner: Principal;
+    quantity: number;
+    saleDate: Time;
 }
 export interface RevenueEntry {
     id: bigint;
@@ -42,13 +53,6 @@ export interface ExpenseEntry {
     vendor: bigint;
     category: bigint;
     amount: number;
-}
-export interface CogsSale {
-    id: bigint;
-    itemId: bigint;
-    owner: Principal;
-    quantity: number;
-    saleDate: Time;
 }
 export interface UserProfile {
     name: string;
@@ -84,7 +88,7 @@ export interface backendInterface {
     getCogsItems(): Promise<Array<CogsItem>>;
     getCogsPurchases(): Promise<Array<CogsPurchase>>;
     getCogsSales(): Promise<Array<CogsSale>>;
-    getCogsTrends(): Promise<Array<[Time, number]>>;
+    getCogsTrends(): Promise<Array<[YearMonthBucket, number]>>;
     getExpenses(): Promise<Array<ExpenseEntry>>;
     getPaymentMethods(): Promise<Array<string>>;
     getRevenueEntries(): Promise<Array<RevenueEntry>>;

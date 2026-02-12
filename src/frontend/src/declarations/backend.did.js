@@ -57,6 +57,10 @@ export const CogsSale = IDL.Record({
   'quantity' : IDL.Float64,
   'saleDate' : Time,
 });
+export const YearMonthBucket = IDL.Record({
+  'month' : IDL.Nat,
+  'year' : IDL.Int,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -99,7 +103,7 @@ export const idlService = IDL.Service({
   'getCogsSales' : IDL.Func([], [IDL.Vec(CogsSale)], ['query']),
   'getCogsTrends' : IDL.Func(
       [],
-      [IDL.Vec(IDL.Tuple(Time, IDL.Float64))],
+      [IDL.Vec(IDL.Tuple(YearMonthBucket, IDL.Float64))],
       ['query'],
     ),
   'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
@@ -187,6 +191,7 @@ export const idlFactory = ({ IDL }) => {
     'quantity' : IDL.Float64,
     'saleDate' : Time,
   });
+  const YearMonthBucket = IDL.Record({ 'month' : IDL.Nat, 'year' : IDL.Int });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -233,7 +238,7 @@ export const idlFactory = ({ IDL }) => {
     'getCogsSales' : IDL.Func([], [IDL.Vec(CogsSale)], ['query']),
     'getCogsTrends' : IDL.Func(
         [],
-        [IDL.Vec(IDL.Tuple(Time, IDL.Float64))],
+        [IDL.Vec(IDL.Tuple(YearMonthBucket, IDL.Float64))],
         ['query'],
       ),
     'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),

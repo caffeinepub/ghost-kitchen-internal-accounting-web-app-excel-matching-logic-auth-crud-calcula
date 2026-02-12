@@ -1,95 +1,48 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "COGS module UI, React Query integration, and dashboard/report KPIs",
+  "title": "Reports: Month/Year selectors for Monthly report type",
   "requirements": [
     {
-      "id": "REQ-5",
-      "summary": "Replace the static /cogs page with a functional COGS module UI for managing items, purchases, sales, and viewing COGS summary/trends.",
+      "id": "REQ-1",
+      "summary": "On Reports > Report Configuration, replace the Monthly report’s day-based date selection with explicit Month and Year selectors that drive the existing start/end date range and printing.",
       "acceptanceCriteria": [
-        "/cogs no longer shows a coming-soon alert by default; it provides working UI for: Items, Purchases, Sales, and Summary/Trends.",
-        "Users can create/edit/delete items, purchases, and sales from the UI using dialogs/forms consistent with existing CRUD patterns in the app.",
-        "Vendor selection is available where applicable and is populated from existing vendors master data.",
-        "The page shows total COGS for a selected time window and a simple trend visualization (e.g., table or lightweight chart) using the backend trend endpoint.",
-        "All user-facing text on the COGS page is in English."
+        "When Report Type = \"Monthly\", the UI shows a clear Month selector and Year selector (English labels).",
+        "Changing Month/Year updates the computed startDate/endDate used for filtering revenue/expenses/COGS totals to the selected calendar month.",
+        "The page’s \"Financial Summary - … to …\" header reflects the selected month’s date range.",
+        "The \"Print Report\" action prints the report for the currently selected month/year without requiring the user to manually pick a specific day."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/CogsPage.tsx",
-          "operation": "modify",
-          "description": "Replace the current coming-soon content with a tabbed COGS module UI (Items, Purchases, Sales, Summary/Trends). Use existing shadcn-ui components (e.g., Tabs, Card, Table, Dialog, Button, Input, Select, ScrollArea, Alert) to match existing CRUD page patterns. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/cogs/CogsItemsTab.tsx",
+          "path": "frontend/src/components/reports/MonthYearSelector.tsx",
           "operation": "create",
-          "description": "Create the Items management tab: list items, show empty/loading states, and provide create/edit/delete dialogs with fields for name, default unit cost, and optional vendor selection (populated via existing vendor master data). Use shadcn-ui Table + Dialog patterns consistent with Expenses/Revenue pages. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/cogs/CogsPurchasesTab.tsx",
-          "operation": "create",
-          "description": "Create the Purchases tab: list purchases and provide create/edit/delete dialogs with date, item selection, quantity purchased, unit cost, and optional vendor selection. Reuse existing UI patterns (Table, Dialog, Select, Input) and show clear empty/loading states. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/cogs/CogsSalesTab.tsx",
-          "operation": "create",
-          "description": "Create the Sales tab: list sales and provide create/edit/delete dialogs with date, item selection, and quantity sold. Reuse existing UI patterns (Table, Dialog, Select, Input) and show clear empty/loading states. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/cogs/CogsSummaryTab.tsx",
-          "operation": "create",
-          "description": "Create the Summary/Trends tab: include a time window selector for COGS reporting, display computed total COGS for the selected window, and render a simple monthly trend visualization (table is acceptable) from trend query data. Use existing shadcn-ui components (Card, Table, Alert) and English text only. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/cogs/utils.ts",
-          "operation": "create",
-          "description": "Add small COGS UI utilities (e.g., mapping item/vendor IDs to display names, converting date inputs to backend Time BigInt) to keep tab components concise and consistent. Keep logic frontend-only. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Extend the React Query data layer to support COGS items/purchases/sales CRUD plus total and trend queries, with proper invalidation/refresh behavior.",
-      "acceptanceCriteria": [
-        "New hooks exist in frontend/src/hooks/useQueries.ts for listing and mutating COGS items, purchases, and sales, matching the patterns used for expenses and revenue.",
-        "After create/update/delete of COGS records, the COGS summary/trend queries and the dashboard query data are invalidated/refetched so UI stays consistent.",
-        "Loading and empty states are handled similarly to existing pages (spinner during load, clear empty-state messaging)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add COGS query/mutation hooks in this file (per acceptance criteria): queries for items/purchases/sales lists and for computed total COGS over a provided [start,end] window and monthly trend data; mutations for create/update/delete for items/purchases/sales. Ensure successful mutations invalidate/refetch relevant query keys (COGS lists, COGS total/trends, and dashboard). Keep patterns consistent with existing useExpenses/useRevenue hooks and handle actor dependency similarly."
-        },
-        {
-          "path": "frontend/src/pages/CogsPage.tsx",
-          "operation": "modify",
-          "description": "Wire the new COGS hooks into the COGS module UI so screens refresh after mutations and show spinner/empty-state messaging consistent with existing pages. Use existing shadcn-ui components for alerts/loading/empty states where needed. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Integrate computed COGS into the dashboard KPIs and reports (including print views) and incorporate COGS into net profit calculations.",
-      "acceptanceCriteria": [
-        "Dashboard KPI 'COGS' displays the computed COGS for the selected time window instead of the current placeholder value.",
-        "Reports include a displayed COGS total for the selected report range, and net profit calculations incorporate COGS (i.e., net profit = revenue - expenses - COGS) in the report summary section.",
-        "Report output remains printable using the existing print flow."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update useDashboardData to incorporate computed COGS for the selected time window (use the backend-provided COGS calculation capability via the actor) and adjust derived net profit/profit margin calculations accordingly. Ensure the dashboard query key and invalidations align with COGS mutations so KPI values stay current."
-        },
-        {
-          "path": "frontend/src/pages/DashboardPage.tsx",
-          "operation": "modify",
-          "description": "Display the dashboard 'COGS' KPI using the computed value from the dashboard data hook (remove placeholder behavior) and ensure any accompanying summary sections show the same computed COGS consistently. Use English text only."
+          "description": "Create a small, reusable Month+Year selector composed from existing shadcn/ui Select components (do not edit frontend/src/components/ui). Expose controlled props (month, year, onMonthChange, onYearChange) and render English labels or allow caller-provided labels. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/ReportsPage.tsx",
           "operation": "modify",
-          "description": "Fetch computed COGS for the report date range and display a COGS total alongside revenue/expenses in the report summary. Update net profit calculation to: revenue - expenses - COGS, and ensure the printed output reflects the same values while keeping the existing print flow intact (no-print/print sections). Use existing shadcn-ui components and English text only. Verify the component's usage instructions before implementing."
+          "description": "Update Report Configuration so that when Report Type is Monthly, the date input is replaced by the MonthYearSelector (Month + Year). Ensure the selected month/year drives the existing startDate/endDate computation (calendar month start through month end) and that the Financial Summary header and Print Report use the currently selected month/year-derived range. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Keep non-monthly report type behavior intact and make date-related inputs consistent and understandable for each report type.",
+      "acceptanceCriteria": [
+        "Daily reports still allow selecting an exact date.",
+        "3 Months / 6 Months still compute ranges relative to the user-selected reference date (or an equivalent clearly labeled reference control).",
+        "Annual reports still allow selecting a year (either via the existing date input or a dedicated year selector), and the computed range remains Jan 1 through Dec 31 of that year."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/reports/YearSelector.tsx",
+          "operation": "create",
+          "description": "Create a simple Year selector composed from existing shadcn/ui Select components (do not edit frontend/src/components/ui), suitable for Annual report configuration. Provide controlled props (year, onChange) and English labeling support. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/ReportsPage.tsx",
+          "operation": "modify",
+          "description": "Adjust the Report Configuration inputs per report type: Daily keeps an exact date input; 3 Months/6 Months keep a date input but relabel it to an English, clearer meaning (e.g., \"Reference Date\") while preserving existing range logic; Annual uses the new YearSelector (or an equivalent clear control) and keeps the computed range as Jan 1–Dec 31 for the selected year. Ensure UI remains consistent across type switches without altering report calculations beyond the derived start/end range. Verify the component's usage instructions before implementing."
         }
       ]
     }

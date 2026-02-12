@@ -124,7 +124,7 @@ function ItemForm({ item, vendors, onClose }: ItemFormProps) {
   const [formData, setFormData] = useState({
     name: item?.name || '',
     defaultUnitCost: item?.defaultUnitCost.toString() || '',
-    vendor: item?.vendor?.toString() || '',
+    vendor: item?.vendor?.toString() || undefined,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -151,6 +151,14 @@ function ItemForm({ item, vendors, onClose }: ItemFormProps) {
         },
         { onSuccess: onClose }
       );
+    }
+  };
+
+  const handleVendorChange = (value: string) => {
+    if (value === '__none__') {
+      setFormData({ ...formData, vendor: undefined });
+    } else {
+      setFormData({ ...formData, vendor: value });
     }
   };
 
@@ -184,13 +192,13 @@ function ItemForm({ item, vendors, onClose }: ItemFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="vendor">Vendor (Optional)</Label>
-        <Select value={formData.vendor} onValueChange={(value) => setFormData({ ...formData, vendor: value })}>
+        <Select value={formData.vendor} onValueChange={handleVendorChange}>
           <SelectTrigger id="vendor">
             <SelectValue placeholder="Select vendor" />
           </SelectTrigger>
           <SelectContent>
             <ScrollArea className="h-[200px]">
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="__none__">None</SelectItem>
               {vendors.map(([id, name]) => (
                 <SelectItem key={id.toString()} value={id.toString()}>
                   {name}

@@ -2,55 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-current-static-coming-soon-cogs-page-with-a-functional-cogs-module-ui-that-lets-users-manage-items-record-purchases-and-sales-and-view-computed-total-cogs-and-trends-over-time",
-      "featureTitle": "Replace the current static 'Coming Soon' COGS page with a functional COGS module UI that lets users manage items, record purchases and sales, and view computed total COGS and trends over time.",
+      "featureId": "feature-update-the-reports-page-report-configuration-so-that-when-report-type-is-set-to-monthly-the-user-can-explicitly-choose-the-report-month-and-year-instead-of-relying-on-an-arbitrary-day-based-date-picker-before-running-printing-the-report",
+      "featureTitle": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
       "files": [
-        "frontend/src/pages/CogsPage.tsx",
-        "frontend/src/pages/cogs/CogsItemsTab.tsx",
-        "frontend/src/pages/cogs/CogsPurchasesTab.tsx",
-        "frontend/src/pages/cogs/CogsSalesTab.tsx",
-        "frontend/src/pages/cogs/CogsSummaryTab.tsx",
-        "frontend/src/pages/cogs/utils.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-extend-the-react-query-data-layer-to-support-cogs-items-purchases-sales-total-cogs-and-cogs-trend-queries-mutations-and-ensure-relevant-screens-refresh-appropriately-after-mutations",
-      "featureTitle": "Extend the React Query data layer to support COGS items, purchases, sales, total COGS, and COGS trend queries/mutations, and ensure relevant screens refresh appropriately after mutations.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/CogsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-integrate-cogs-into-existing-dashboard-and-reports-so-that-kpi-and-report-calculations-use-the-computed-cogs-value-and-display-it-alongside-revenue-expenses-including-print-views-where-applicable",
-      "featureTitle": "Integrate COGS into existing dashboard and reports so that KPI and report calculations use the computed COGS value and display it alongside revenue/expenses, including print views where applicable.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/DashboardPage.tsx",
+        "frontend/src/components/reports/MonthYearSelector.tsx",
         "frontend/src/pages/ReportsPage.tsx"
       ],
       "components": [
@@ -62,7 +17,27 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-7"
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-preserve-existing-behavior-for-other-report-types-daily-3-months-6-months-annual-while-ensuring-the-date-month-year-inputs-remain-understandable-and-consistent-with-the-selected-report-type",
+      "featureTitle": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
+      "files": [
+        "frontend/src/components/reports/YearSelector.tsx",
+        "frontend/src/pages/ReportsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
       ],
       "confidence": "high"
     }

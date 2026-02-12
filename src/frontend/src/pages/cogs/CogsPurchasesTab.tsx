@@ -143,7 +143,7 @@ function PurchaseForm({ purchase, items, vendors, onClose }: PurchaseFormProps) 
     itemId: purchase?.itemId.toString() || '',
     quantity: purchase?.quantity.toString() || '',
     unitCost: purchase?.unitCost.toString() || '',
-    vendor: purchase?.vendor?.toString() || '',
+    vendor: purchase?.vendor?.toString() || undefined,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -174,6 +174,14 @@ function PurchaseForm({ purchase, items, vendors, onClose }: PurchaseFormProps) 
         },
         { onSuccess: onClose }
       );
+    }
+  };
+
+  const handleVendorChange = (value: string) => {
+    if (value === '__none__') {
+      setFormData({ ...formData, vendor: undefined });
+    } else {
+      setFormData({ ...formData, vendor: value });
     }
   };
 
@@ -240,13 +248,13 @@ function PurchaseForm({ purchase, items, vendors, onClose }: PurchaseFormProps) 
 
       <div className="space-y-2">
         <Label htmlFor="vendor">Vendor (Optional)</Label>
-        <Select value={formData.vendor} onValueChange={(value) => setFormData({ ...formData, vendor: value })}>
+        <Select value={formData.vendor} onValueChange={handleVendorChange}>
           <SelectTrigger id="vendor">
             <SelectValue placeholder="Select vendor" />
           </SelectTrigger>
           <SelectContent>
             <ScrollArea className="h-[200px]">
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="__none__">None</SelectItem>
               {vendors.map(([id, name]) => (
                 <SelectItem key={id.toString()} value={id.toString()}>
                   {name}

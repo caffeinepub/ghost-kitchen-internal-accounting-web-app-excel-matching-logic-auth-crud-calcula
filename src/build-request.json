@@ -1,169 +1,58 @@
 {
   "kind": "build_request",
-  "title": "Implement Cost of Goods Sold (COGS) tracking (items, purchases/sales, vendor linkage, reporting & trends)",
+  "title": "Reports: Monthly report must allow selecting month and year",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add backend data models and CRUD endpoints for COGS inventory items, including item name, default unit cost, and optional vendor linkage, with per-user ownership enforcement consistent with existing Expenses/Revenue authorization behavior.",
-      "target": "backend",
+      "text": "Update the Reports page \"Report Configuration\" so that when \"Report Type\" is set to \"Monthly\", the user can explicitly choose the report month and year (instead of relying on an arbitrary day-based date picker) before running/printing the report.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Track individual items and their costs",
-          "Link items to vendors"
+          "on Report tab, Report Configuration\nReport Type: Monthly - It does not let me select what month and year I want to print. it has to ask me. or I need to be able to select the month that I want to run the report"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes create/update/delete/list query endpoints for COGS items.",
-        "Each item is owned by the caller; non-admin users can only read/write their own items.",
-        "Item can reference an optional vendor id (consistent with existing vendor IDs) and traps if a non-existent vendor id is provided.",
-        "Basic validation exists (e.g., name non-empty; costs are non-negative)."
+        "When Report Type = \"Monthly\", the UI shows a clear Month selector and Year selector (English labels).",
+        "Changing Month/Year updates the computed startDate/endDate used for filtering revenue/expenses/COGS totals to the selected calendar month.",
+        "The page’s \"Financial Summary - … to …\" header reflects the selected month’s date range.",
+        "The \"Print Report\" action prints the report for the currently selected month/year without requiring the user to manually pick a specific day."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add backend data models and CRUD endpoints to record COGS purchases (inventory receipts) with date, item, quantity purchased, unit cost, and optional vendor, and enforce per-user ownership and validation.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Record quantities purchased and sold",
-          "Track item costs, quantities, and vendor information"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend exposes create/update/delete/list query endpoints for COGS purchases.",
-        "Purchase records include: id, owner, date, itemId, quantityPurchased, unitCost, vendorId? (optional).",
-        "Validation prevents zero/negative quantities and negative costs.",
-        "Non-admin users can only read/write their own purchase records."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add backend data models and CRUD endpoints to record COGS sales (inventory usage) with date, item, and quantity sold, and enforce per-user ownership and validation.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Record quantities purchased and sold"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend exposes create/update/delete/list query endpoints for COGS sales.",
-        "Sale records include: id, owner, date, itemId, quantitySold.",
-        "Validation prevents zero/negative quantities.",
-        "Non-admin users can only read/write their own sales records."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Implement backend COGS calculation endpoints that compute total COGS over a provided time window and return time-series trend data (bucketed by month) for reporting.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Calculate total COGS for reporting",
-          "View COGS trends over time"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend provides an endpoint to compute total COGS between a start and end timestamp (inclusive).",
-        "Backend provides an endpoint to return a monthly time series of COGS values over a requested range (each point includes period start and total COGS).",
-        "COGS computation uses recorded purchases and sales per item and is deterministic for the same underlying data (documented in code comments).",
-        "If there is insufficient purchase history for an item (e.g., sales with no purchases), the API returns a safe, well-defined value (e.g., treats missing cost as 0) and does not crash."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Replace the current static 'Coming Soon' COGS page with a functional COGS module UI that lets users manage items, record purchases and sales, and view computed total COGS and trends over time.",
+      "text": "Preserve existing behavior for other report types (Daily, 3 Months, 6 Months, Annual) while ensuring the date/month/year inputs remain understandable and consistent with the selected report type.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "COGS tracking functionality is currently being developed.",
-          "Planned Features"
+          "Report Type: Monthly - It does not let me select what month and year I want to print."
         ]
       },
       "acceptanceCriteria": [
-        "/cogs no longer shows a coming-soon alert by default; it provides working UI for: Items, Purchases, Sales, and Summary/Trends.",
-        "Users can create/edit/delete items, purchases, and sales from the UI using dialogs/forms consistent with existing CRUD patterns in the app.",
-        "Vendor selection is available where applicable and is populated from existing vendors master data.",
-        "The page shows total COGS for a selected time window and a simple trend visualization (e.g., table or lightweight chart) using the backend trend endpoint.",
-        "All user-facing text on the COGS page is in English."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Extend the React Query data layer to support COGS items, purchases, sales, total COGS, and COGS trend queries/mutations, and ensure relevant screens refresh appropriately after mutations.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Track individual items and their costs",
-          "Calculate total COGS for reporting"
-        ]
-      },
-      "acceptanceCriteria": [
-        "New hooks exist in frontend/src/hooks/useQueries.ts for listing and mutating COGS items, purchases, and sales, matching the patterns used for expenses and revenue.",
-        "After create/update/delete of COGS records, the COGS summary/trend queries and the dashboard query data are invalidated/refetched so UI stays consistent.",
-        "Loading and empty states are handled similarly to existing pages (spinner during load, clear empty-state messaging)."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Integrate COGS into existing dashboard and reports so that KPI and report calculations use the computed COGS value and display it alongside revenue/expenses, including print views where applicable.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Calculate total COGS for reporting"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Dashboard KPI 'COGS' displays the computed COGS for the selected time window instead of the current placeholder value.",
-        "Reports include a displayed COGS total for the selected report range, and net profit calculations incorporate COGS (i.e., net profit = revenue - expenses - COGS) in the report summary section.",
-        "Report output remains printable using the existing print flow."
+        "Daily reports still allow selecting an exact date.",
+        "3 Months / 6 Months still compute ranges relative to the user-selected reference date (or an equivalent clearly labeled reference control).",
+        "Annual reports still allow selecting a year (either via the existing date input or a dedicated year selector), and the computed range remains Jan 1 through Dec 31 of that year."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not modify files under frontend/src/components/ui (compose existing shadcn components instead).",
-    "Do not modify frontend immutable hook files (frontend/src/hooks/useInternetIdentity.ts/tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
-    "Use English for all user-facing UI text added/changed by this feature."
+    "Use English for any user-facing text.",
+    "Do not edit files under frontend/src/components/ui (compose existing UI components instead).",
+    "Do not modify frontend immutable hook/entry files listed in SYSTEM_CONTEXT (e.g., frontend/src/main.tsx, frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts)."
   ],
   "nonGoals": [
-    "Implementing barcode scanning, recipe-level bill of materials, or ingredient-level depletion beyond the user-entered purchases/sales quantities.",
-    "Integrating external accounting systems or third-party inventory APIs.",
-    "Real-time collaboration or multi-user shared inventory beyond the current per-caller ownership model."
+    "No backend/canister changes are required for this request.",
+    "No changes to report calculations beyond using the user-selected month/year to derive the existing start/end date range.",
+    "No new export formats (PDF/CSV) or emailing/sharing features."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }
