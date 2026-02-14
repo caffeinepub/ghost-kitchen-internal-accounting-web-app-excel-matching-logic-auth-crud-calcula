@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Let users choose specific contiguous 3-month and 6-month report windows on the Reports page using a month/year selector (full-month ranges), and ensure consistent date-range calculations across Monthly, 3 Months, and 6 Months report types.
+**Goal:** Use Internet Identity principal-based roles as the sole access control mechanism, with automatic default user provisioning and an admin UI/API for role management.
 
 **Planned changes:**
-- Replace the current single “Reference Date” picker for the “3 Months” report type with a month/year-based selector that computes an exact 3-consecutive-month (full calendar month) range.
-- Replace the current single “Reference Date” picker for the “6 Months” report type with a month/year-based selector that computes an exact 6-consecutive-month (full calendar month) range.
-- Standardize report start/end date calculation so Monthly / 3 Months / 6 Months all use full-month windows (start = first day of first month; end = last day of last month, end-of-day), and ensure switching between report types does not cause runtime errors or invalid dates.
-- Ensure report filtering/queries and the Financial Summary header reflect the selected computed start/end dates for multi-month windows.
+- Frontend: Remove the credential-login gating step so Internet Identity sign-in enters the app directly, and route guards/navigation read roles from the backend for the signed-in principal.
+- Backend: Persist user roles keyed by principal; auto-create a user on first login with default role = employee and return that role on subsequent requests.
+- Backend: Add admin-only APIs to list known principals with roles and to update a user’s role.
+- Frontend: Update Settings to show a backend-backed table of principal IDs and roles, and allow admins to change roles via the new API (removing any mock credential-related content).
+- Frontend: Ensure admin-only pages (e.g., Settings, Master Data) are hidden and protected consistently based on the backend-stored role, and refresh role-dependent UI after role updates.
+- Backend: Add/adjust upgrade-safe migration logic if needed to preserve existing canister data while introducing principal->role storage.
 
-**User-visible outcome:** On the Reports tab, users can select which contiguous 3-month or 6-month period they want (via month/year selection), and the report data and header dates correctly match the chosen full-month range without errors when switching report types.
+**User-visible outcome:** Users sign in with Internet Identity and are automatically treated as Employees by default; admins can view principals in Settings and promote/demote roles, and admin-only navigation/pages are accessible only to admins.

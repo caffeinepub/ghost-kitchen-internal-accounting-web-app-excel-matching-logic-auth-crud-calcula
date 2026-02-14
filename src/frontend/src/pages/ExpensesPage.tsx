@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useExpenses, useCategories, useVendors, usePaymentMethods, useBanks } from '../hooks/useQueries';
+import { useGetCallerUserRole } from '../hooks/useEmployeeAuth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,19 +10,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
-import { type ExpenseEntry } from '../backend';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { type ExpenseEntry, UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
 import NumericCell from '../components/NumericCell';
 
 export default function ExpensesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
+  const { data: userRole } = useGetCallerUserRole();
 
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: vendors = [], isLoading: vendorsLoading } = useVendors();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: banks = [], isLoading: banksLoading } = useBanks();
+
+  const isOwner = userRole === UserRole.admin;
 
   const handleEdit = (expense: ExpenseEntry) => {
     setEditingExpense(expense);
@@ -116,7 +121,24 @@ export default function ExpensesPage() {
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <DeleteExpenseButton expenseId={expense.id} />
+                          {isOwner ? (
+                            <DeleteExpenseButton expenseId={expense.id} />
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button variant="ghost" size="sm" disabled>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Only Owners can delete expenses</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

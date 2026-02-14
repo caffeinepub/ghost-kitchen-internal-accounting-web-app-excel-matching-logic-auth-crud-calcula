@@ -1,34 +1,35 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Reports tab error: 'Report for 3 months' and 'Print report 6 months' do not allow choosing the desired contiguous 3- or 6-month range (should work like monthly report selection)."
+  "summary": "App will use Internet Identity for authentication and a custom user database keyed by principal ID to support role-based access (default role employee on first login) with an owner/admin settings UI to view principals and change roles (e.g., promote to manager).",
+  "architectural_notes": [
+    "Use Internet Identity principal ID as the unique user identifier; store roles/permissions in an app-managed user database.",
+    "On first login, create a user record if missing and assign default role = employee; subsequent logins load role from DB."
   ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-3-months-the-user-can-select-a-specific-contiguous-3-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
-      "title": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
+      "id": "feature-replace-the-current-internet-identity-credential-login-session-gate-with-an-internet-identity-only-gate-after-a-successful-internet-identity-sign-in-the-app-must-enter-the-main-application-without-showing-the-credentialloginpage-and-the-app-must-determine-access-from-a-role-stored-in-the-backend-keyed-by-the-caller-s-principal",
+      "title": "Replace the current “Internet Identity + credential login session” gate with an “Internet Identity only” gate: after a successful Internet Identity sign-in, the app must enter the main application without showing the CredentialLoginPage, and the app must determine access from a role stored in the backend keyed by the caller’s principal.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-6-months-the-user-can-select-a-specific-contiguous-6-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
-      "title": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
+      "id": "feature-update-the-settings-page-to-manage-internet-identity-users-by-principal-display-a-table-of-known-users-principal-id-in-monospace-current-role-and-provide-an-admin-only-ui-control-to-change-a-user-s-role-and-save-it-via-the-new-backend-api",
+      "title": "Update the Settings page to manage Internet Identity users by principal: display a table of known users (principal ID in monospace + current role), and provide an admin-only UI control to change a user’s role and save it via the new backend API.",
       "reqIds": [
-        "REQ-2"
+        "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-report-date-range-calculation-logic-in-the-reports-page-is-consistent-across-monthly-3-months-and-6-months-selections-full-month-windows-and-does-not-rely-on-arbitrary-day-based-reference-dates-for-multi-month-report-types",
-      "title": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+      "id": "feature-align-navigation-visibility-and-route-protection-with-the-principal-based-role-system-appshell-navigation-filtering-and-requirerole-checks-must-use-the-same-role-source-the-backend-stored-role-for-the-caller-principal-and-reliably-hide-admin-only-pages-e-g-master-data-settings-from-non-admin-users",
+      "title": "Align navigation visibility and route protection with the principal-based role system: AppShell navigation filtering and RequireRole checks must use the same role source (the backend-stored role for the caller principal) and reliably hide admin-only pages (e.g., Master Data, Settings) from non-admin users.",
       "reqIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "version": 1
     }
@@ -36,18 +37,48 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Reports tab: allow selecting a specific contiguous 3-month date range for the 'Report for 3 months' option (like monthly report selection)",
+      "summary": "Implement user record auto-creation on first Internet Identity login with default role = employee (user DB keyed by principal ID)",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Reports tab: allow selecting a specific contiguous 6-month date range for the 'Print report 6 months' option",
+      "summary": "Add role-based access control: load role by principal ID and show pages/permissions accordingly (employee vs manager)",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add owner/admin settings UI to view users' principal IDs and manually change their roles (e.g., employee <-> manager)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Implement backend user-role persistence keyed by principal ID with automatic first-login provisioning: when a principal is seen for the first time, the backend must create a user record with default role = employee (non-admin) and return that role for subsequent calls.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add backend admin APIs to support owner/admin role management over principals: provide an admin-only method to list users (at minimum: principal ID + current role) and an admin-only method to change a user’s role between employee and manager/admin as supported by the app’s role enum.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "If adding new stable state for principal->role storage requires an upgrade-safe migration, create/update the backend migration logic according to the project’s conditional migration policy so existing canister data is preserved across upgrades.",
+      "reqIds": [
+        "REQ-6"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Reports tab: allow selecting contiguous 3-month and 6-month report ranges",
+  "projectName": "Internet Identity role-based access with auto-created users (default Employee) and admin role management",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

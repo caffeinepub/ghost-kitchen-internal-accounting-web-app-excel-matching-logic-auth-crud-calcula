@@ -61,11 +61,20 @@ export const YearMonthBucket = IDL.Record({
   'month' : IDL.Nat,
   'year' : IDL.Int,
 });
+export const UserInfo = IDL.Record({
+  'principal' : IDL.Principal,
+  'role' : UserRole,
+});
+export const LoginCredentials = IDL.Record({
+  'password' : IDL.Text,
+  'employeeId' : IDL.Nat,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'calculateCogsForPeriod' : IDL.Func([Time, Time], [IDL.Float64], ['query']),
+  'changeUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createBank' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'createCategory' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'createCogsItem' : IDL.Func(
@@ -106,6 +115,16 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(YearMonthBucket, IDL.Float64))],
       ['query'],
     ),
+  'getCurrentRole' : IDL.Func(
+      [],
+      [
+        IDL.Variant({
+          'unauthenticated' : IDL.Null,
+          'authenticated' : UserRole,
+        }),
+      ],
+      ['query'],
+    ),
   'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
   'getPaymentMethods' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'getRevenueEntries' : IDL.Func([], [IDL.Vec(RevenueEntry)], ['query']),
@@ -120,6 +139,10 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'listUsers' : IDL.Func([], [IDL.Vec(UserInfo)], ['query']),
+  'loginWithCredentials' : IDL.Func([LoginCredentials], [UserRole], []),
+  'logout' : IDL.Func([], [], []),
+  'registerCredentials' : IDL.Func([IDL.Nat, IDL.Text, UserRole], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateBank' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   'updateCategory' : IDL.Func([IDL.Nat, IDL.Text], [], []),
@@ -192,11 +215,20 @@ export const idlFactory = ({ IDL }) => {
     'saleDate' : Time,
   });
   const YearMonthBucket = IDL.Record({ 'month' : IDL.Nat, 'year' : IDL.Int });
+  const UserInfo = IDL.Record({
+    'principal' : IDL.Principal,
+    'role' : UserRole,
+  });
+  const LoginCredentials = IDL.Record({
+    'password' : IDL.Text,
+    'employeeId' : IDL.Nat,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'calculateCogsForPeriod' : IDL.Func([Time, Time], [IDL.Float64], ['query']),
+    'changeUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createBank' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'createCategory' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'createCogsItem' : IDL.Func(
@@ -241,6 +273,16 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(YearMonthBucket, IDL.Float64))],
         ['query'],
       ),
+    'getCurrentRole' : IDL.Func(
+        [],
+        [
+          IDL.Variant({
+            'unauthenticated' : IDL.Null,
+            'authenticated' : UserRole,
+          }),
+        ],
+        ['query'],
+      ),
     'getExpenses' : IDL.Func([], [IDL.Vec(ExpenseEntry)], ['query']),
     'getPaymentMethods' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'getRevenueEntries' : IDL.Func([], [IDL.Vec(RevenueEntry)], ['query']),
@@ -255,6 +297,10 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'listUsers' : IDL.Func([], [IDL.Vec(UserInfo)], ['query']),
+    'loginWithCredentials' : IDL.Func([LoginCredentials], [UserRole], []),
+    'logout' : IDL.Func([], [], []),
+    'registerCredentials' : IDL.Func([IDL.Nat, IDL.Text, UserRole], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateBank' : IDL.Func([IDL.Nat, IDL.Text], [], []),
     'updateCategory' : IDL.Func([IDL.Nat, IDL.Text], [], []),

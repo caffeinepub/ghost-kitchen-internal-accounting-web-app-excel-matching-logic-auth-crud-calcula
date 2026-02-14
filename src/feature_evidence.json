@@ -2,11 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-3-months-the-user-can-select-a-specific-contiguous-3-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
-      "featureTitle": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
+      "featureId": "feature-replace-the-current-internet-identity-credential-login-session-gate-with-an-internet-identity-only-gate-after-a-successful-internet-identity-sign-in-the-app-must-enter-the-main-application-without-showing-the-credentialloginpage-and-the-app-must-determine-access-from-a-role-stored-in-the-backend-keyed-by-the-caller-s-principal",
+      "featureTitle": "Replace the current “Internet Identity + credential login session” gate with an “Internet Identity only” gate: after a successful Internet Identity sign-in, the app must enter the main application without showing the CredentialLoginPage, and the app must determine access from a role stored in the backend keyed by the caller’s principal.",
       "files": [
-        "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-        "frontend/src/pages/ReportsPage.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/AppShell.tsx",
+        "frontend/src/hooks/useEmployeeAuth.ts",
+        "frontend/src/pages/CredentialLoginPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -22,10 +24,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-reports-page-so-that-when-report-type-is-set-to-6-months-the-user-can-select-a-specific-contiguous-6-month-range-similar-to-the-existing-monthly-month-year-selector-instead-of-using-a-single-reference-date-date-picker",
-      "featureTitle": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
+      "featureId": "feature-update-the-settings-page-to-manage-internet-identity-users-by-principal-display-a-table-of-known-users-principal-id-in-monospace-current-role-and-provide-an-admin-only-ui-control-to-change-a-user-s-role-and-save-it-via-the-new-backend-api",
+      "featureTitle": "Update the Settings page to manage Internet Identity users by principal: display a table of known users (principal ID in monospace + current role), and provide an admin-only UI control to change a user’s role and save it via the new backend API.",
       "files": [
-        "frontend/src/pages/ReportsPage.tsx"
+        "frontend/src/hooks/useUserAdmin.ts",
+        "frontend/src/pages/SettingsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -36,16 +39,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-4"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-report-date-range-calculation-logic-in-the-reports-page-is-consistent-across-monthly-3-months-and-6-months-selections-full-month-windows-and-does-not-rely-on-arbitrary-day-based-reference-dates-for-multi-month-report-types",
-      "featureTitle": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+      "featureId": "feature-align-navigation-visibility-and-route-protection-with-the-principal-based-role-system-appshell-navigation-filtering-and-requirerole-checks-must-use-the-same-role-source-the-backend-stored-role-for-the-caller-principal-and-reliably-hide-admin-only-pages-e-g-master-data-settings-from-non-admin-users",
+      "featureTitle": "Align navigation visibility and route protection with the principal-based role system: AppShell navigation filtering and RequireRole checks must use the same role source (the backend-stored role for the caller principal) and reliably hide admin-only pages (e.g., Master Data, Settings) from non-admin users.",
       "files": [
-        "frontend/src/lib/reports/dateRanges.ts",
-        "frontend/src/pages/ReportsPage.tsx"
+        "frontend/src/components/AppShell.tsx",
+        "frontend/src/components/RequireRole.tsx",
+        "frontend/src/hooks/useUserAdmin.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -56,7 +60,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "confidence": "high"
     }

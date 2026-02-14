@@ -1,42 +1,63 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T04:29:32.320Z",
-  "summary": "The diff adds a dedicated multi-month (3/6) month/year selector and centralizes date-range calculations into a new utility module, then wires ReportsPage to compute full-month start/end timestamps for monthly, 3-month, and 6-month windows. However, the provided truncated diff does not show evidence that the Financial Summary header text was updated to reflect the selected start/end dates for 3- and 6-month ranges.",
+  "generatedAt": "2026-02-13T04:19:18.164Z",
+  "summary": "Most frontend changes align with moving to Internet Identity-only auth and principal-based role checks, plus an admin Settings UI for listing users and changing roles. However, the backend migration/state handling shown does not demonstrate upgrade-safe persistence for the new principal->role provisioning data, and there are several unrelated feature additions (per summaries) not requested by the BuildRequest.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "The Financial Summary header reflects the correct start and end dates for the selected 3-month range.",
-      "reason": "ReportsPage.tsx is truncated before the UI/header rendering, so there is no evidence that the Financial Summary header displays the computed startDate/endDate for the 3-month selection.",
+      "id": "REQ-6",
+      "requirement": "Add upgrade-safe migration logic for any new stable principal->role (user/role) storage so existing canister data is preserved across upgrades.",
+      "reason": "The added migration module only migrates `{ nextCategoryId : Nat }` and does not show migration/preservation of any new role/user state. Additionally, the new provisioning tracker `provisionedUsers` is introduced as an in-memory `Map` in `backend/main.mo` without any shown stable persistence/migration handling, so upgrade safety for principal->role provisioning is not evidenced.",
       "evidence": [
-        "frontend/src/pages/ReportsPage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "The Financial Summary header reflects the correct start and end dates for the selected 6-month range.",
-      "reason": "ReportsPage.tsx is truncated before the UI/header rendering, so there is no evidence that the Financial Summary header displays the computed startDate/endDate for the 6-month selection.",
-      "evidence": [
-        "frontend/src/pages/ReportsPage.tsx (truncated)"
+        "backend/migration.mo",
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added generic date-range utilities beyond the requested monthly/3-month/6-month windows (e.g., full-year range, single-day range, and date-range formatting).",
-      "reason": "BuildRequest focuses on 3-month and 6-month range selection and consistent full-month windows across monthly/3/6-month types; it does not request new daily/year range utilities or formatting helpers.",
+      "description": "Added a new backend module file `backend/migration.mo` rather than keeping all backend logic in a single Motoko actor file as constrained.",
+      "reason": "Constraint states backend must remain a single Motoko actor with all logic in `backend/main.mo` (no additional backend services/modules). The diff adds `backend/migration.mo`.",
       "evidence": [
-        "frontend/src/lib/reports/dateRanges.ts",
-        "frontend/src/pages/ReportsPage.tsx (imports getYearRange, getDayRange)"
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Kept/introduced a dedicated `CredentialLoginPage` that now displays an informational message about auth flow changes.",
+      "reason": "BuildRequest required removing the credential-login gate; it did not request a replacement informational credential login page/component.",
+      "evidence": [
+        "frontend/src/pages/CredentialLoginPage.tsx"
+      ]
+    },
+    {
+      "description": "Unrelated large-scale feature work (COGS tabs/trends, reports rework with date-range selectors, KPI/net-profit calculation changes, master data/payment method UI behavior, print CSS/theme changes, etc.).",
+      "reason": "These items are not part of REQ-1..REQ-6 and appear as additional enhancements beyond the requested Internet Identity role-based access and admin user management.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Added a backup file `frontend/src/hooks/useEmployeeAuth.ts.bak`.",
+      "reason": "Not requested; appears to be an artifact rather than part of the specified feature set.",
+      "evidence": [
+        "frontend/src/hooks/useEmployeeAuth.ts.bak"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.55,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-    "frontend/src/lib/reports/dateRanges.ts",
-    "frontend/src/pages/ReportsPage.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppShell.tsx",
+    "frontend/src/components/RequireRole.tsx",
+    "frontend/src/hooks/useEmployeeAuth.ts",
+    "frontend/src/hooks/useEmployeeAuth.ts.bak",
+    "frontend/src/hooks/useUserAdmin.ts",
+    "frontend/src/pages/CredentialLoginPage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
     "project_state.json"
   ]
 }

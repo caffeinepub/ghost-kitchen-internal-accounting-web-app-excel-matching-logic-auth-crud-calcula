@@ -1,62 +1,102 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T04:29:32.323Z",
+  "generatedAt": "2026-02-13T04:19:18.167Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
+    "total": 6,
     "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the Reports page so that when Report Type is set to \"3 Months\", the user can select a specific contiguous 3-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
+        "summary": "Replace the current “Internet Identity + credential login session” gate with an “Internet Identity only” gate: after a successful Internet Identity sign-in, the app must enter the main application without showing the CredentialLoginPage, and the app must determine access from a role stored in the backend keyed by the caller’s principal.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-          "frontend/src/pages/ReportsPage.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useEmployeeAuth.ts",
+          "frontend/src/components/AppShell.tsx",
+          "frontend/src/pages/CredentialLoginPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-          "frontend/src/pages/ReportsPage.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useEmployeeAuth.ts",
+          "frontend/src/components/AppShell.tsx",
+          "frontend/src/pages/CredentialLoginPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the Reports page so that when Report Type is set to \"6 Months\", the user can select a specific contiguous 6-month range (similar to the existing Monthly month/year selector) instead of using a single \"Reference Date\" date picker.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ReportsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ReportsPage.tsx"
-        ]
+        "summary": "Implement backend user-role persistence keyed by principal ID with automatic first-login provisioning: when a principal is seen for the first time, the backend must create a user record with default role = employee (non-admin) and return that role for subsequent calls.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure report date-range calculation logic in the Reports page is consistent across Monthly, 3 Months, and 6 Months selections (full-month windows) and does not rely on arbitrary day-based reference dates for multi-month report types.",
+        "summary": "Add backend admin APIs to support owner/admin role management over principals: provide an admin-only method to list users (at minimum: principal ID + current role) and an admin-only method to change a user’s role between employee and manager/admin as supported by the app’s role enum.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Update the Settings page to manage Internet Identity users by principal: display a table of known users (principal ID in monospace + current role), and provide an admin-only UI control to change a user’s role and save it via the new backend API.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/reports/dateRanges.ts",
-          "frontend/src/pages/ReportsPage.tsx"
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/hooks/useUserAdmin.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/reports/dateRanges.ts",
-          "frontend/src/pages/ReportsPage.tsx"
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/hooks/useUserAdmin.ts"
         ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Align navigation visibility and route protection with the principal-based role system: AppShell navigation filtering and RequireRole checks must use the same role source (the backend-stored role for the caller principal) and reliably hide admin-only pages (e.g., Master Data, Settings) from non-admin users.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/RequireRole.tsx",
+          "frontend/src/components/AppShell.tsx",
+          "frontend/src/hooks/useUserAdmin.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/RequireRole.tsx",
+          "frontend/src/components/AppShell.tsx",
+          "frontend/src/hooks/useUserAdmin.ts"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "If adding new stable state for principal->role storage requires an upgrade-safe migration, create/update the backend migration logic according to the project’s conditional migration policy so existing canister data is preserved across upgrades.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-    "frontend/src/lib/reports/dateRanges.ts",
-    "frontend/src/pages/ReportsPage.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AppShell.tsx",
+    "frontend/src/components/RequireRole.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useEmployeeAuth.ts",
+    "frontend/src/hooks/useEmployeeAuth.ts.bak",
+    "frontend/src/hooks/useUserAdmin.ts",
+    "frontend/src/pages/CredentialLoginPage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

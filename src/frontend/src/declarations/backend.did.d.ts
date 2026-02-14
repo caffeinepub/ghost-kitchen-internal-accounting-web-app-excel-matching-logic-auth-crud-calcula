@@ -44,6 +44,7 @@ export interface ExpenseEntry {
   'category' : bigint,
   'amount' : number,
 }
+export interface LoginCredentials { 'password' : string, 'employeeId' : bigint }
 export interface RevenueEntry {
   'id' : bigint,
   'owner' : Principal,
@@ -53,6 +54,7 @@ export interface RevenueEntry {
   'amount' : number,
 }
 export type Time = bigint;
+export interface UserInfo { 'principal' : Principal, 'role' : UserRole }
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -62,6 +64,7 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'calculateCogsForPeriod' : ActorMethod<[Time, Time], number>,
+  'changeUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createBank' : ActorMethod<[string], bigint>,
   'createCategory' : ActorMethod<[string], bigint>,
   'createCogsItem' : ActorMethod<[string, number, [] | [bigint]], bigint>,
@@ -89,12 +92,21 @@ export interface _SERVICE {
   'getCogsPurchases' : ActorMethod<[], Array<CogsPurchase>>,
   'getCogsSales' : ActorMethod<[], Array<CogsSale>>,
   'getCogsTrends' : ActorMethod<[], Array<[YearMonthBucket, number]>>,
+  'getCurrentRole' : ActorMethod<
+    [],
+    { 'unauthenticated' : null } |
+      { 'authenticated' : UserRole }
+  >,
   'getExpenses' : ActorMethod<[], Array<ExpenseEntry>>,
   'getPaymentMethods' : ActorMethod<[], Array<string>>,
   'getRevenueEntries' : ActorMethod<[], Array<RevenueEntry>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVendors' : ActorMethod<[], Array<[bigint, string]>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'listUsers' : ActorMethod<[], Array<UserInfo>>,
+  'loginWithCredentials' : ActorMethod<[LoginCredentials], UserRole>,
+  'logout' : ActorMethod<[], undefined>,
+  'registerCredentials' : ActorMethod<[bigint, string, UserRole], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateBank' : ActorMethod<[bigint, string], undefined>,
   'updateCategory' : ActorMethod<[bigint, string], undefined>,

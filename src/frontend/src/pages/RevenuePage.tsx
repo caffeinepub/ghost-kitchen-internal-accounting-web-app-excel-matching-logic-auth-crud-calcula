@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRevenue, useCategories } from '../hooks/useQueries';
+import { useGetCallerUserRole } from '../hooks/useEmployeeAuth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,16 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
-import { type RevenueEntry } from '../backend';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { type RevenueEntry, UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
 import NumericCell from '../components/NumericCell';
 
 export default function RevenuePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRevenue, setEditingRevenue] = useState<RevenueEntry | null>(null);
+  const { data: userRole } = useGetCallerUserRole();
 
   const { data: revenueEntries = [], isLoading: revenueLoading } = useRevenue();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const isOwner = userRole === UserRole.admin;
 
   const handleEdit = (revenue: RevenueEntry) => {
     setEditingRevenue(revenue);
@@ -91,14 +96,31 @@ export default function RevenuePage() {
                     <TableRow key={revenue.id.toString()}>
                       <TableCell>{new Date(Number(revenue.date) / 1000000).toLocaleDateString()}</TableCell>
                       <TableCell>{categories.find(([id]) => id === revenue.category)?.[1] || 'Unknown'}</TableCell>
-                      <TableCell>{revenue.description}</TableCell>
+                      <TableCell>{revenue.description || '-'}</TableCell>
                       <NumericCell value={revenue.amount} format="currency" />
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(revenue)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <DeleteRevenueButton revenueId={revenue.id} />
+                          {isOwner ? (
+                            <DeleteRevenueButton revenueId={revenue.id} />
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button variant="ghost" size="sm" disabled>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Only Owners can delete revenue</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -122,9 +144,7 @@ interface RevenueFormProps {
 function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
   const { createRevenue, updateRevenue } = useRevenue();
   const [formData, setFormData] = useState({
-    date: revenue
-      ? new Date(Number(revenue.date) / 1000000).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0],
+    date: revenue ? new Date(Number(revenue.date) / 1000000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     category: revenue?.category.toString() || '',
     description: revenue?.description || '',
     amount: revenue?.amount.toString() || '',
@@ -132,6 +152,7 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const revenueData: RevenueEntry = {
       id: revenue?.id || BigInt(0),
       owner: revenue?.owner || Principal.anonymous(),
@@ -199,11 +220,9 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
         <Label htmlFor="description">Description</Label>
         <Input
           id="description"
-          type="text"
-          placeholder="Enter description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          required
+          placeholder="Enter revenue description (optional)"
         />
       </div>
 
@@ -215,12 +234,12 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {revenue ? 'Updating...' : 'Creating...'}
             </>
           ) : revenue ? (
-            'Update'
+            'Update Revenue'
           ) : (
-            'Create'
+            'Create Revenue'
           )}
         </Button>
       </div>
@@ -230,20 +249,16 @@ function RevenueForm({ revenue, categories, onClose }: RevenueFormProps) {
 
 function DeleteRevenueButton({ revenueId }: { revenueId: bigint }) {
   const { deleteRevenue } = useRevenue();
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this revenue entry?')) {
-      setIsDeleting(true);
-      deleteRevenue.mutate(revenueId, {
-        onSettled: () => setIsDeleting(false),
-      });
+      deleteRevenue.mutate(revenueId);
     }
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting}>
-      {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+    <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleteRevenue.isPending}>
+      {deleteRevenue.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
     </Button>
   );
 }

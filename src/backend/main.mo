@@ -1,16 +1,20 @@
 import Map "mo:core/Map";
 import Array "mo:core/Array";
+import Float "mo:core/Float";
 import Int "mo:core/Int";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
-import Text "mo:core/Text";
-import Iter "mo:core/Iter";
 import Nat "mo:core/Nat";
 import Order "mo:core/Order";
+import Iter "mo:core/Iter";
+import Migration "migration";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
+(with migration = Migration.run)
 actor {
   public type UserProfile = {
     name : Text;
@@ -110,12 +114,92 @@ actor {
 
   let paymentMethods : [Text] = ["Cash", "Credit Card", "Debit Card", "Check"];
 
+  // User provisioning tracking
+  let provisionedUsers = Map.empty<Principal, Bool>();
+
+  // Credential database: employeeId -> (passwordHash, role)
+  type CredentialRecord = {
+    passwordHash : Text;
+    role : AccessControl.UserRole;
+  };
+
+  let credentialDatabase = Map.empty<Nat, CredentialRecord>();
+
+  // Credential Session State
+  type CredentialSession = {
+    employeeId : Nat;
+    role : AccessControl.UserRole;
+    isActive : Bool;
+  };
+
+  let credentialSessions = Map.empty<Principal, CredentialSession>();
+
+  // Automatic user provisioning with default role (employee = #user)
+  func ensureUserProvisioned(caller : Principal) {
+    if (caller.isAnonymous()) {
+      return; // Anonymous users remain as guests
+    };
+    
+    switch (provisionedUsers.get(caller)) {
+      case (?_) {
+        // User already provisioned
+      };
+      case (null) {
+        // First time seeing this principal - provision with default employee role (#user)
+        AccessControl.assignRole(accessControlState, caller, caller, #user);
+        provisionedUsers.add(caller, true);
+      };
+    };
+  };
+
+  // Admin API: List all users with their roles
+  public type UserInfo = {
+    principal : Principal;
+    role : AccessControl.UserRole;
+  };
+
+  public query ({ caller }) func listUsers() : async [UserInfo] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can list users");
+    };
+    
+    provisionedUsers.keys().toArray().map(
+      func(p : Principal) : UserInfo {
+        {
+          principal = p;
+          role = AccessControl.getUserRole(accessControlState, p);
+        }
+      }
+    );
+  };
+
+  // Admin API: Change a user's role
+  public shared ({ caller }) func changeUserRole(user : Principal, newRole : AccessControl.UserRole) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can change user roles");
+    };
+    
+    // Ensure the user exists in our system
+    switch (provisionedUsers.get(user)) {
+      case (null) {
+        Runtime.trap("User not found in system");
+      };
+      case (?_) {
+        AccessControl.assignRole(accessControlState, caller, user, newRole);
+      };
+    };
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access profiles");
+    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    ensureUserProvisioned(caller);
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
@@ -123,12 +207,99 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
     userProfiles.add(caller, profile);
   };
 
+  // Credential-Based Login Session Functions
+
+  type LoginCredentials = {
+    employeeId : Nat;
+    password : Text;
+  };
+
+  // Simple hash function for demonstration (in production, use proper cryptographic hashing)
+  func hashPassword(password : Text) : Text {
+    password # "_hashed";
+  };
+
+  // Admin function to register credentials (only admins can create user credentials)
+  public shared ({ caller }) func registerCredentials(employeeId : Nat, password : Text, role : AccessControl.UserRole) : async () {
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can register credentials");
+    };
+
+    let passwordHash = hashPassword(password);
+    let record : CredentialRecord = {
+      passwordHash;
+      role;
+    };
+    credentialDatabase.add(employeeId, record);
+  };
+
+  public shared ({ caller }) func loginWithCredentials(credentials : LoginCredentials) : async AccessControl.UserRole {
+    ensureUserProvisioned(caller);
+    switch (credentialDatabase.get(credentials.employeeId)) {
+      case (null) {
+        Runtime.trap("Invalid credentials: Employee ID not found");
+      };
+      case (?record) {
+        let providedHash = hashPassword(credentials.password);
+        if (providedHash != record.passwordHash) {
+          Runtime.trap("Invalid credentials: Incorrect password");
+        };
+
+        let session : CredentialSession = {
+          employeeId = credentials.employeeId;
+          role = record.role;
+          isActive = true;
+        };
+
+        credentialSessions.add(caller, session);
+        AccessControl.assignRole(accessControlState, caller, caller, record.role);
+
+        record.role;
+      };
+    };
+  };
+
+  public shared ({ caller }) func logout() : async () {
+    credentialSessions.remove(caller);
+    AccessControl.assignRole(accessControlState, caller, caller, #guest);
+  };
+
+  public query ({ caller }) func getCurrentRole() : async {
+    #unauthenticated;
+    #authenticated : AccessControl.UserRole;
+  } {
+    ensureUserProvisioned(caller);
+    switch (credentialSessions.get(caller)) {
+      case (?session) {
+        if (session.isActive) { #authenticated(session.role) } else {
+          #unauthenticated;
+        };
+      };
+      case (null) {
+        let role = AccessControl.getUserRole(accessControlState, caller);
+        switch (role) {
+          case (#guest) { #unauthenticated };
+          case (_) { #authenticated(role) };
+        };
+      };
+    };
+  };
+
+  // Master Data Management - Owner/Admin Only
+
   public shared ({ caller }) func createCategory(name : Text) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create categories");
+    };
     let id = nextCategoryId;
     categories.add(id, name);
     nextCategoryId += 1;
@@ -136,7 +307,10 @@ actor {
   };
 
   public shared ({ caller }) func updateCategory(id : Nat, newName : Text) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update categories");
+    };
     switch (categories.get(id)) {
       case (null) { Runtime.trap("Category not found") };
       case (?_) {
@@ -146,7 +320,10 @@ actor {
   };
 
   public shared ({ caller }) func deleteCategory(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete categories");
+    };
     if (not categories.containsKey(id)) {
       Runtime.trap("Category not found");
     };
@@ -154,12 +331,18 @@ actor {
   };
 
   public query ({ caller }) func getCategories() : async [(Nat, Text)] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access categories");
+    };
     categories.toArray();
   };
 
   public shared ({ caller }) func createVendor(name : Text) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create vendors");
+    };
     let id = nextVendorId;
     vendors.add(id, name);
     nextVendorId += 1;
@@ -167,7 +350,10 @@ actor {
   };
 
   public shared ({ caller }) func updateVendor(id : Nat, newName : Text) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update vendors");
+    };
     switch (vendors.get(id)) {
       case (null) { Runtime.trap("Vendor not found") };
       case (?_) {
@@ -177,7 +363,10 @@ actor {
   };
 
   public shared ({ caller }) func deleteVendor(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete vendors");
+    };
     if (not vendors.containsKey(id)) {
       Runtime.trap("Vendor not found");
     };
@@ -185,12 +374,18 @@ actor {
   };
 
   public query ({ caller }) func getVendors() : async [(Nat, Text)] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access vendors");
+    };
     vendors.toArray();
   };
 
   public shared ({ caller }) func createBank(name : Text) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create banks");
+    };
     let id = nextBankId;
     banks.add(id, name);
     nextBankId += 1;
@@ -198,7 +393,10 @@ actor {
   };
 
   public shared ({ caller }) func updateBank(id : Nat, newName : Text) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update banks");
+    };
     switch (banks.get(id)) {
       case (null) { Runtime.trap("Bank not found") };
       case (?_) {
@@ -208,7 +406,10 @@ actor {
   };
 
   public shared ({ caller }) func deleteBank(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete banks");
+    };
     if (not banks.containsKey(id)) {
       Runtime.trap("Bank not found");
     };
@@ -216,17 +417,28 @@ actor {
   };
 
   public query ({ caller }) func getBanks() : async [(Nat, Text)] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access banks");
+    };
     banks.toArray();
   };
 
   public query ({ caller }) func getPaymentMethods() : async [Text] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access payment methods");
+    };
     paymentMethods;
   };
 
+  // Expense Management - Managers can create/update, only Owners can delete
+
   public shared ({ caller }) func createExpense(expense : ExpenseEntry) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create expenses");
+    };
     validatePaymentMethod(expense.paymentMethod, expense.bank);
     let id = nextExpenseId;
     let newExpense = { expense with id; owner = caller };
@@ -236,7 +448,10 @@ actor {
   };
 
   public shared ({ caller }) func updateExpense(id : Nat, updatedExpense : ExpenseEntry) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update expenses");
+    };
     switch (expenses.get(id)) {
       case (null) { Runtime.trap("Expense not found") };
       case (?existing) {
@@ -251,20 +466,23 @@ actor {
   };
 
   public shared ({ caller }) func deleteExpense(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete expenses");
+    };
     switch (expenses.get(id)) {
       case (null) { Runtime.trap("Expense not found") };
-      case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only delete your own expenses");
-        };
+      case (?_) {
         expenses.remove(id);
       };
     };
   };
 
   public query ({ caller }) func getExpenses() : async [ExpenseEntry] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access expenses");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     let filtered = if (isAdmin) {
       expenses.values().toArray();
@@ -274,8 +492,13 @@ actor {
     filtered.sort(ExpenseEntry.compareByDate);
   };
 
+  // Revenue Management - Managers can create/update, only Owners can delete
+
   public shared ({ caller }) func createRevenue(revenueEntry : RevenueEntry) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create revenue");
+    };
     let id = nextRevenueId;
     let newRevenue = { revenueEntry with id; owner = caller };
     revenue.add(id, newRevenue);
@@ -284,7 +507,10 @@ actor {
   };
 
   public shared ({ caller }) func updateRevenue(id : Nat, updatedRevenue : RevenueEntry) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update revenue");
+    };
     switch (revenue.get(id)) {
       case (null) { Runtime.trap("Revenue entry not found") };
       case (?existing) {
@@ -298,20 +524,23 @@ actor {
   };
 
   public shared ({ caller }) func deleteRevenue(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete revenue");
+    };
     switch (revenue.get(id)) {
       case (null) { Runtime.trap("Revenue entry not found") };
-      case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only delete your own revenue entries");
-        };
+      case (?_) {
         revenue.remove(id);
       };
     };
   };
 
   public query ({ caller }) func getRevenueEntries() : async [RevenueEntry] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access revenue");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     if (isAdmin) {
       revenue.values().toArray();
@@ -320,10 +549,13 @@ actor {
     };
   };
 
-  // COGS Inventory Management
+  // COGS Inventory Management - Owner/Admin Only
 
   public shared ({ caller }) func createCogsItem(name : Text, defaultUnitCost : Float, vendor : ?Nat) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create COGS items");
+    };
     let id = nextCogsItemId;
     let item : CogsItem = {
       id;
@@ -338,13 +570,13 @@ actor {
   };
 
   public shared ({ caller }) func updateCogsItem(id : Nat, name : Text, defaultUnitCost : Float, vendor : ?Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update COGS items");
+    };
     switch (cogsItems.get(id)) {
       case (null) { Runtime.trap("COGS item not found") };
       case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only update your own COGS items");
-        };
         let updatedItem = {
           existing with
           name;
@@ -357,20 +589,23 @@ actor {
   };
 
   public shared ({ caller }) func deleteCogsItem(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete COGS items");
+    };
     switch (cogsItems.get(id)) {
       case (null) { Runtime.trap("COGS item not found") };
-      case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only delete your own COGS items");
-        };
+      case (?_) {
         cogsItems.remove(id);
       };
     };
   };
 
   public query ({ caller }) func getCogsItems() : async [CogsItem] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access COGS items");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     let filtered = if (isAdmin) {
       cogsItems.values().toArray();
@@ -381,13 +616,13 @@ actor {
   };
 
   public shared ({ caller }) func createCogsPurchase(itemId : Nat, purchaseDate : Time.Time, quantity : Float, unitCost : Float, vendor : ?Nat) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create COGS purchases");
+    };
     switch (cogsItems.get(itemId)) {
       case (null) { Runtime.trap("COGS item not found") };
       case (?item) {
-        if (item.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only purchase your own COGS items");
-        };
         let id = nextCogsPurchaseId;
         let purchase : CogsPurchase = {
           id;
@@ -406,20 +641,16 @@ actor {
   };
 
   public shared ({ caller }) func updateCogsPurchase(id : Nat, itemId : Nat, purchaseDate : Time.Time, quantity : Float, unitCost : Float, vendor : ?Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update COGS purchases");
+    };
     switch (cogsPurchases.get(id)) {
       case (null) { Runtime.trap("COGS purchase not found") };
       case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only update your own COGS purchases");
-        };
         switch (cogsItems.get(itemId)) {
           case (null) { Runtime.trap("COGS item not found") };
-          case (?item) {
-            if (item.owner != existing.owner and not AccessControl.isAdmin(accessControlState, existing.owner)) {
-              Runtime.trap("Unauthorized: Can only update your own COGS item purchases");
-            };
-          };
+          case (?_) {};
         };
         let updatedPurchase = {
           existing with
@@ -435,20 +666,23 @@ actor {
   };
 
   public shared ({ caller }) func deleteCogsPurchase(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete COGS purchases");
+    };
     switch (cogsPurchases.get(id)) {
       case (null) { Runtime.trap("COGS purchase not found") };
-      case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only delete your own COGS purchases");
-        };
+      case (?_) {
         cogsPurchases.remove(id);
       };
     };
   };
 
   public query ({ caller }) func getCogsPurchases() : async [CogsPurchase] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access COGS purchases");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     let filtered = if (isAdmin) {
       cogsPurchases.values().toArray();
@@ -459,13 +693,13 @@ actor {
   };
 
   public shared ({ caller }) func createCogsSale(itemId : Nat, saleDate : Time.Time, quantity : Float) : async Nat {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can create COGS sales");
+    };
     switch (cogsItems.get(itemId)) {
       case (null) { Runtime.trap("COGS item not found") };
       case (?item) {
-        if (item.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only sell your own COGS items");
-        };
         let id = nextCogsSaleId;
         let sale : CogsSale = {
           id;
@@ -482,20 +716,16 @@ actor {
   };
 
   public shared ({ caller }) func updateCogsSale(id : Nat, itemId : Nat, saleDate : Time.Time, quantity : Float) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update COGS sales");
+    };
     switch (cogsSales.get(id)) {
       case (null) { Runtime.trap("COGS sale not found") };
       case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only update your own COGS sales");
-        };
         switch (cogsItems.get(itemId)) {
           case (null) { Runtime.trap("COGS item not found") };
-          case (?item) {
-            if (item.owner != existing.owner and not AccessControl.isAdmin(accessControlState, existing.owner)) {
-              Runtime.trap("Unauthorized: Can only update your own COGS item sales");
-            };
-          };
+          case (?_) {};
         };
         let updatedSale = {
           existing with
@@ -509,20 +739,23 @@ actor {
   };
 
   public shared ({ caller }) func deleteCogsSale(id : Nat) : async () {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can delete COGS sales");
+    };
     switch (cogsSales.get(id)) {
       case (null) { Runtime.trap("COGS sale not found") };
-      case (?existing) {
-        if (existing.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only delete your own COGS sales");
-        };
+      case (?_) {
         cogsSales.remove(id);
       };
     };
   };
 
   public query ({ caller }) func getCogsSales() : async [CogsSale] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access COGS sales");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
     let filtered = if (isAdmin) {
       cogsSales.values().toArray();
@@ -533,9 +766,12 @@ actor {
   };
 
   public query ({ caller }) func calculateCogsForPeriod(startDate : Time.Time, endDate : Time.Time) : async Float {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can calculate COGS");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
-    
+
     let userPurchases = cogsPurchases.values().toArray().filter(
       func(p) {
         let ownerMatch = if (isAdmin) { true } else { p.owner == caller };
@@ -587,15 +823,18 @@ actor {
   };
 
   public query ({ caller }) func getCogsTrends() : async [(YearMonthBucket, Float)] {
-    authorizeUser(caller);
+    ensureUserProvisioned(caller);
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access COGS trends");
+    };
     let isAdmin = AccessControl.isAdmin(accessControlState, caller);
-    
+
     let allSales = if (isAdmin) {
       cogsSales.values().toArray();
     } else {
       cogsSales.values().toArray().filter(func(s) { s.owner == caller });
     };
-    
+
     let bucketedSales = allSales.foldLeft(
       Map.empty<Int, Float>(),
       func(acc, sale) {
@@ -618,12 +857,6 @@ actor {
         (bucketToYearMonth(bucket), amount);
       }
     );
-  };
-
-  func authorizeUser(caller : Principal.Principal) {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can perform this action");
-    };
   };
 
   func validatePaymentMethod(method : Text, bank : ?Nat) {

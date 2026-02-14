@@ -1,8 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router';
-import { LayoutDashboard, Receipt, DollarSign, Package, Database, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, DollarSign, Package, Database, FileText, LogOut, Settings } from 'lucide-react';
+import { useGetCallerUserRole } from '../hooks/useEmployeeAuth';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
+import { UserRole } from '../backend';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -11,6 +13,7 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const { clear } = useInternetIdentity();
   const queryClient = useQueryClient();
+  const { data: userRole } = useGetCallerUserRole();
   const router = useRouterState();
   const currentPath = router.location.pathname;
 
@@ -20,13 +23,19 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/expenses', label: 'Expenses', icon: Receipt },
-    { path: '/revenue', label: 'Revenue', icon: DollarSign },
-    { path: '/cogs', label: 'COGS', icon: Package },
-    { path: '/master-data', label: 'Master Data', icon: Database },
-    { path: '/reports', label: 'Reports', icon: FileText },
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: [UserRole.admin, UserRole.user] },
+    { path: '/expenses', label: 'Expenses', icon: Receipt, roles: [UserRole.admin, UserRole.user] },
+    { path: '/revenue', label: 'Revenue', icon: DollarSign, roles: [UserRole.admin, UserRole.user] },
+    { path: '/cogs', label: 'COGS', icon: Package, roles: [UserRole.admin, UserRole.user] },
+    { path: '/master-data', label: 'Master Data', icon: Database, roles: [UserRole.admin] },
+    { path: '/reports', label: 'Reports', icon: FileText, roles: [UserRole.admin, UserRole.user] },
+    { path: '/settings', label: 'Settings', icon: Settings, roles: [UserRole.admin] },
   ];
+
+  // Filter navigation items based on user role
+  const visibleNavItems = navItems.filter(item => 
+    userRole && item.roles.includes(userRole)
+  );
 
   return (
     <div className="flex h-screen flex-col">
@@ -36,7 +45,7 @@ export default function AppShell({ children }: AppShellProps) {
           <div className="flex items-center gap-8">
             <h1 className="text-xl font-semibold">FoodBooks</h1>
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPath === item.path;
                 return (
@@ -71,14 +80,14 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Footer */}
       <footer className="no-print border-t bg-card py-4">
         <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          © 2026-2027 FoodBooks • Built with ❤️ by{' '}
+          © {new Date().getFullYear()} FoodBooks • Built with ❤️ using{' '}
           <a
-            href="https://sgmultimediagroup.com/"
+            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-foreground hover:underline"
           >
-            SGmultimediagroup.com
+            caffeine.ai
           </a>
         </div>
       </footer>

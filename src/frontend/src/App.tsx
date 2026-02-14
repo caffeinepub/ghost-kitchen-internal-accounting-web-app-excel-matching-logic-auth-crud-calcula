@@ -1,6 +1,7 @@
 import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
+import { useGetCallerUserRole } from './hooks/useEmployeeAuth';
 import { Loader2 } from 'lucide-react';
 import AppShell from './components/AppShell';
 import LoginPage from './pages/LoginPage';
@@ -11,16 +12,20 @@ import RevenuePage from './pages/RevenuePage';
 import CogsPage from './pages/CogsPage';
 import MasterDataPage from './pages/MasterDataPage';
 import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
+import RequireRole from './components/RequireRole';
+import { UserRole } from './backend';
 
 // Root layout component
 function RootComponent() {
   const { identity, isInitializing } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const { data: userRole, isLoading: roleLoading, isFetched: roleFetched } = useGetCallerUserRole();
 
   const isAuthenticated = !!identity;
 
   // Show loading during initialization
-  if (isInitializing || (isAuthenticated && profileLoading)) {
+  if (isInitializing) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -28,13 +33,31 @@ function RootComponent() {
     );
   }
 
-  // Show login if not authenticated
+  // Show Internet Identity login if not authenticated
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
+  // Show loading while checking role from backend
+  if (roleLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show loading while checking profile
+  if (profileLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   // Show profile setup if authenticated but no profile
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
+  const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
   if (showProfileSetup) {
     return <ProfileSetupDialog />;
   }
@@ -80,11 +103,15 @@ const cogsRoute = createRoute({
   component: CogsPage,
 });
 
-// Master Data route
+// Master Data route - Owner only
 const masterDataRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/master-data',
-  component: MasterDataPage,
+  component: () => (
+    <RequireRole allowedRoles={[UserRole.admin]}>
+      <MasterDataPage />
+    </RequireRole>
+  ),
 });
 
 // Reports route
@@ -92,6 +119,17 @@ const reportsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/reports',
   component: ReportsPage,
+});
+
+// Settings route - Owner only
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: () => (
+    <RequireRole allowedRoles={[UserRole.admin]}>
+      <SettingsPage />
+    </RequireRole>
+  ),
 });
 
 // Create router
@@ -102,6 +140,7 @@ const routeTree = rootRoute.addChildren([
   cogsRoute,
   masterDataRoute,
   reportsRoute,
+  settingsRoute,
 ]);
 
 const router = createRouter({ routeTree });

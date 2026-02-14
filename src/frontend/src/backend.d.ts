@@ -17,6 +17,10 @@ export interface CogsPurchase {
     quantity: number;
     unitCost: number;
 }
+export interface LoginCredentials {
+    password: string;
+    employeeId: bigint;
+}
 export interface YearMonthBucket {
     month: bigint;
     year: bigint;
@@ -27,13 +31,6 @@ export interface CogsItem {
     owner: Principal;
     name: string;
     vendor?: bigint;
-}
-export interface CogsSale {
-    id: bigint;
-    itemId: bigint;
-    owner: Principal;
-    quantity: number;
-    saleDate: Time;
 }
 export interface RevenueEntry {
     id: bigint;
@@ -54,8 +51,19 @@ export interface ExpenseEntry {
     category: bigint;
     amount: number;
 }
+export interface UserInfo {
+    principal: Principal;
+    role: UserRole;
+}
 export interface UserProfile {
     name: string;
+}
+export interface CogsSale {
+    id: bigint;
+    itemId: bigint;
+    owner: Principal;
+    quantity: number;
+    saleDate: Time;
 }
 export enum UserRole {
     admin = "admin",
@@ -65,6 +73,7 @@ export enum UserRole {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculateCogsForPeriod(startDate: Time, endDate: Time): Promise<number>;
+    changeUserRole(user: Principal, newRole: UserRole): Promise<void>;
     createBank(name: string): Promise<bigint>;
     createCategory(name: string): Promise<bigint>;
     createCogsItem(name: string, defaultUnitCost: number, vendor: bigint | null): Promise<bigint>;
@@ -89,12 +98,23 @@ export interface backendInterface {
     getCogsPurchases(): Promise<Array<CogsPurchase>>;
     getCogsSales(): Promise<Array<CogsSale>>;
     getCogsTrends(): Promise<Array<[YearMonthBucket, number]>>;
+    getCurrentRole(): Promise<{
+        __kind__: "unauthenticated";
+        unauthenticated: null;
+    } | {
+        __kind__: "authenticated";
+        authenticated: UserRole;
+    }>;
     getExpenses(): Promise<Array<ExpenseEntry>>;
     getPaymentMethods(): Promise<Array<string>>;
     getRevenueEntries(): Promise<Array<RevenueEntry>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVendors(): Promise<Array<[bigint, string]>>;
     isCallerAdmin(): Promise<boolean>;
+    listUsers(): Promise<Array<UserInfo>>;
+    loginWithCredentials(credentials: LoginCredentials): Promise<UserRole>;
+    logout(): Promise<void>;
+    registerCredentials(employeeId: bigint, password: string, role: UserRole): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateBank(id: bigint, newName: string): Promise<void>;
     updateCategory(id: bigint, newName: string): Promise<void>;

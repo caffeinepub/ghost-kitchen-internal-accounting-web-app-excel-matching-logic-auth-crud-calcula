@@ -1,65 +1,84 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Reports: selectable contiguous 3- and 6-month ranges using month/year selectors",
+  "title": "Internet Identity-only role gate with principal-based admin user management (frontend)",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace the 3 Months “Reference Date” date picker with a month/year selector that chooses a contiguous 3-month window.",
+      "summary": "Remove credential-session gating and enter the app after Internet Identity sign-in, using backend principal-based role as the single authorization source; ensure logout clears Internet Identity session and cached protected data.",
       "acceptanceCriteria": [
-        "When Report Type = \"3 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 3-month period.",
-        "The computed report period covers exactly 3 full consecutive calendar months (inclusive), based on the user’s selection.",
-        "The Financial Summary header reflects the correct start and end dates for the selected 3-month range.",
-        "No runtime errors occur when switching between Monthly and 3 Months report types."
+        "When signed in with Internet Identity, the app does not redirect to or render CredentialLoginPage.",
+        "The app’s route guards (e.g., RequireRole) use the backend role associated with the caller’s principal (not the credential session).",
+        "Logging out ends the Internet Identity session (or returns to the Internet Identity login screen) and clears cached role-protected data."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/reports/MultiMonthRangeSelector.tsx",
-          "operation": "create",
-          "description": "Create a reusable month/year-based selector component for choosing the start month/year of a contiguous multi-month window (configured for 3 months here) and displaying appropriate labels/hints about the resulting range."
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Update the root auth gate to be Internet Identity-only: remove the credential-session check and any rendering/redirect to CredentialLoginPage; instead, wait for the caller role to load from the backend role function before rendering AppShell + routes. Keep profile-setup behavior intact after identity is available. Verify the component's usage instructions before implementing (authorization: clear cached data on logout; treat anonymous as guest; handle authorization traps gracefully)."
         },
         {
-          "path": "frontend/src/pages/ReportsPage.tsx",
+          "path": "frontend/src/hooks/useEmployeeAuth.ts",
           "operation": "modify",
-          "description": "Update the Reports configuration UI so that when reportType is '3month' it renders MultiMonthRangeSelector (month/year) instead of the 'Reference Date' <input type=\"date\">; add state for the selected 3-month window start month/year and ensure switching between 'monthly' and '3month' keeps selector state valid (no NaN dates)."
+          "description": "Refactor role hooks to use the backend-stored principal role as the single source of truth: make useGetCallerUserRole call the backend role getter (not getCurrentRole / credential session). Remove or deprecate useGetCurrentRole-driven credential gating usage. Ensure queries are keyed consistently so role changes and logout can invalidate/refetch. Verify the component's usage instructions before implementing (authorization: role-based access control UI expectations)."
+        },
+        {
+          "path": "frontend/src/components/AppShell.tsx",
+          "operation": "modify",
+          "description": "Replace credential-session logout with Internet Identity logout: call useInternetIdentity().clear() and clear React Query cache (queryClient.clear()) so protected data is removed and the UI returns to the Internet Identity login screen. Continue using the caller role query for nav filtering. Verify the component's usage instructions before implementing (authorization: on logout clear all cached app data including profile/role)."
+        },
+        {
+          "path": "frontend/src/pages/CredentialLoginPage.tsx",
+          "operation": "modify",
+          "description": "Add a safety-only UI update indicating credential login is no longer part of the standard flow (page should be effectively unreachable via the main gate). Keep user-facing text in English. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Replace the 6 Months “Reference Date” date picker with a month/year selector that chooses a contiguous 6-month window.",
+      "id": "REQ-4",
+      "summary": "Update Settings to list Internet Identity principals and allow admin-only role changes via backend APIs.",
       "acceptanceCriteria": [
-        "When Report Type = \"6 Months\", the configuration UI shows a month/year-based selector (not a date input) for choosing the desired 6-month period.",
-        "The computed report period covers exactly 6 full consecutive calendar months (inclusive), based on the user’s selection.",
-        "The Financial Summary header reflects the correct start and end dates for the selected 6-month range.",
-        "No runtime errors occur when switching between Monthly and 6 Months report types."
+        "Settings no longer shows mock employee credential data or mock alerts about a simplified credential system for this flow.",
+        "The Settings table loads from the backend list-users API and displays principal IDs and roles.",
+        "Changing a user’s role in the UI calls the backend update-role API and refreshes the table to show the new role.",
+        "Only admins can access Settings (existing route guard remains effective with the new role system)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ReportsPage.tsx",
+          "path": "frontend/src/pages/SettingsPage.tsx",
           "operation": "modify",
-          "description": "Update the Reports configuration UI so that when reportType is '6month' it renders MultiMonthRangeSelector configured for a 6-month window; add/extend state for the 6-month window start month/year (may share the same start-month state as 3-month) and ensure switching between 'monthly' and '6month' keeps selector state valid (no NaN dates)."
+          "description": "Replace the credential/employee mock management UI with Internet Identity principal user management: render a table of backend-known users (principal in monospace + current role) loaded from listUsers, and provide an admin-only role edit control that saves via changeUserRole then refreshes the list. Remove mock alerts and mock dialogs/forms (create employee, change password). Handle backend authorization errors by showing a user-friendly message. Verify the component's usage instructions before implementing (authorization: access-denied patterns and handling traps/errors gracefully)."
+        },
+        {
+          "path": "frontend/src/hooks/useUserAdmin.ts",
+          "operation": "create",
+          "description": "Create dedicated React Query hooks for admin user management: a listUsers query and a changeUserRole mutation that invalidates/refetches both the users list and the current caller role (so UI updates after promotions). Verify the component's usage instructions before implementing (authorization: invalidate cached data after role changes; handle authorization failures)."
         }
       ]
     },
     {
-      "id": "REQ-3",
-      "summary": "Centralize and standardize report date-range calculations for Monthly, 3 Months, and 6 Months as full-month windows independent of arbitrary day-based reference dates.",
+      "id": "REQ-5",
+      "summary": "Unify navigation visibility and route protection to consistently use backend principal-based roles, and ensure role changes update UI without hard refresh.",
       "acceptanceCriteria": [
-        "For Monthly, 3 Months, and 6 Months report types, startDate is the first day of the first selected month and endDate is the last day of the last month in the window (end-of-day).",
-        "Switching report types preserves/updates relevant selector state without causing invalid dates or NaN timestamps.",
-        "Expenses, revenue, and COGS queries/filtering use the updated start/end timestamps and display correct results for the selected windows."
+        "Non-admin users cannot see admin-only nav items and receive an access-denied screen if they manually navigate to admin-only routes.",
+        "Admin users can see and access admin-only routes.",
+        "Role-dependent UI updates correctly after a role change (e.g., after promoting a user, admin-only nav items appear without a hard refresh once queries are invalidated/refetched)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/reports/dateRanges.ts",
-          "operation": "create",
-          "description": "Add shared, well-tested utility functions to compute full-month windows (monthly, 3 months, 6 months) from a selected start month/year (start = first day of first month; end = last day of last month at end-of-day), and optionally a helper for daily ranges."
+          "path": "frontend/src/components/RequireRole.tsx",
+          "operation": "modify",
+          "description": "Ensure RequireRole relies exclusively on the principal-based role query (useGetCallerUserRole) and treats missing/guest roles as unauthorized, rendering AccessDeniedScreen. Verify the component's usage instructions before implementing (authorization: access control UI behavior; anonymous treated as guest)."
         },
         {
-          "path": "frontend/src/pages/ReportsPage.tsx",
+          "path": "frontend/src/components/AppShell.tsx",
           "operation": "modify",
-          "description": "Refactor useMemo date-range computation to use the new dateRanges utilities for 'monthly', '3month', and '6month' (full-month windows), removing reliance on selectedDate for multi-month report types; keep startTimestamp/endTimestamp derivation and ensure downstream filtering and COGS query use the updated timestamps."
+          "description": "Confirm nav filtering uses the same principal-based role source as RequireRole and updates when role query invalidates/refetches (e.g., after a role change). Ensure no admin-only links appear for non-admins. Verify the component's usage instructions before implementing (authorization: role-based nav visibility)."
+        },
+        {
+          "path": "frontend/src/hooks/useUserAdmin.ts",
+          "operation": "modify",
+          "description": "Ensure role-change mutation invalidates the caller role query key(s) used by AppShell/RequireRole so role-dependent UI updates immediately without hard refresh. Verify the component's usage instructions before implementing (authorization: cache invalidation after role change)."
         }
       ]
     }
